@@ -1,4 +1,4 @@
-import { Button, message, Form, Upload, UploadProps, UploadFile } from 'antd';
+import { Button, message, Form } from 'antd';
 import React, { useState, useRef } from 'react';
 import {
   PageContainer,
@@ -32,11 +32,10 @@ import highlight from '@bytemd/plugin-highlight';
 import byteMath from '@bytemd/plugin-math';
 import zoom from '@bytemd/plugin-medium-zoom';
 import mermaid from '@bytemd/plugin-mermaid';
+import { UploadImage } from '@/components/UploadImage';
 import { Editor } from '@bytemd/react';
 import throttle from 'lodash/throttle';
-import ImgCrop from 'antd-img-crop';
-import { RcFile } from 'antd/es/upload';
-import { session } from '@/utils';
+import { addImage } from '@/services/images';
 
 const plugins = [
   gfm(),
@@ -102,49 +101,50 @@ const PostList: React.FC = () => {
   const [form] = Form.useForm<{ name: string; company: string }>();
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [showTagModal, setShowTagModal] = useState<boolean>(false);
-  const imageIdRef = useRef<string>();
+  const postImagesRef = useRef<API.Image[]>();
 
   const [postContent, setPostContent] = useState<string>('');
 
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
-
-  const onChange: UploadProps['onChange'] = ({ fileList: newFileList, event, file }) => {
-    console.log('fileList--->', fileList, event, 'file-->', file);
-    const { response } = file;
-    if (response) {
-      const data = response.data;
-      imageIdRef.current = data.id; // imgId
+  const onRemoveHandle = (imageId: string) => {
+    // postImagesRef.current = [];
+    postImagesRef.current = postImagesRef.current?.filter((item) => item.id !== imageId);
+  };
+  const onUploadHandle = (postCoverImage: API.Image) => {
+    console.log('onUploadHandle postCoverImage--->', postCoverImage);
+    const hasExistPostImage = postImagesRef.current?.find((item) => item.id !== postCoverImage.id);
+    if (!hasExistPostImage) {
+      postImagesRef.current?.push(postCoverImage);
     }
-    setFileList(newFileList);
+    postImagesRef.current?.forEach((item) => {
+      if (item.id === postCoverImage.id) {
+        item.type = 'COVER';
+      } else {
+        item.type = 'POST';
+      }
+    });
   };
 
-  const onPreview = async (file: UploadFile) => {
-    let src = file.url as string;
-    if (!src) {
-      src = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file.originFileObj as RcFile);
-        reader.onload = () => resolve(reader.result as string);
-      });
-    }
-    const image = new Image();
-    image.src = src;
-    const imgWindow = window.open(src);
-    imgWindow?.document.write(image.outerHTML);
-  };
-
-  const operationButton = () => {
-    return (
-      <Button
-        type="link"
-        disabled
-        onClick={async () => {
-          actionRef.current?.reloadAndRest?.();
-        }}
-      >
-        恢复
-      </Button>
-    );
+  const onEditUploadHandle = async (_files: File[]) => {
+    console.log(_files);
+    const file = _files[0];
+    const formData = new FormData();
+    if (file.name) formData.append('file', file);
+    const {
+      data: { url, name, id },
+    } = await addImage({
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      data: formData,
+    });
+    return [
+      {
+        //TODO: 需要修改图片服务器的问题
+        url,
+        alt: id,
+        title: name,
+      },
+    ];
   };
 
   /**
@@ -205,7 +205,16 @@ const PostList: React.FC = () => {
       dataIndex: 'option',
       valueType: 'option',
       render: (_, record) => [
-        operationButton(),
+        <Button
+          key="edit"
+          type="link"
+          disabled
+          onClick={async () => {
+            actionRef.current?.reloadAndRest?.();
+          }}
+        >
+          恢复
+        </Button>,
         <Button
           danger
           type="link"
@@ -238,7 +247,7 @@ const PostList: React.FC = () => {
               editForm.resetFields();
               form.resetFields();
               setPostContent('');
-              setFileList([]);
+              postImagesRef.current = [];
               handleModalVisible(true);
             }}
           >
@@ -288,12 +297,7 @@ const PostList: React.FC = () => {
             // success = await handleUpdate(formData as API.AgentInfo);
           } else {
             value.content = postContent;
-            value.images = [
-              {
-                id: imageIdRef.current,
-                type: 'POST',
-              },
-            ];
+            value.images = postImagesRef.current || [];
             value.is_release = !!value.is_release;
             success = await handleAdd(value as API.Post);
           }
@@ -309,28 +313,12 @@ const PostList: React.FC = () => {
         <Editor
           value={postContent}
           plugins={plugins}
+          uploadImages={onEditUploadHandle}
           onChange={throttle((markContent: string) => {
             setPostContent(markContent);
           }, 2000)}
-
-          // uploadImages={uploadImages}
-        />
-        <ProFormGroup title="博客封面">
-          <ImgCrop rotationSlider>
-            <Upload
-              action={'/api/image/upload'}
-              headers={{
-                Authorization: `Bearer ${session.get('app_access_token')}`,
-              }}
-              listType="picture-card"
-              fileList={fileList}
-              onChange={onChange}
-              onPreview={onPreview}
-            >
-              {fileList.length < 1 && '+ 上传图片'}
-            </Upload>
-          </ImgCrop>
-        </ProFormGroup>
+        ></Editor>
+        <UploadImage onRemove={onRemoveHandle} onUpload={onUploadHandle}></UploadImage>
         <ProFormGroup title={'博客分类'}>
           <ProFormSelect
             width={'lg'}

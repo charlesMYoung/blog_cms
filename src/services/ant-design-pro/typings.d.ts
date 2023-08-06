@@ -6,6 +6,7 @@ declare namespace API {
     id: string;
     url: string;
     type: string;
+    name: string;
     post_id?: string;
   };
 
