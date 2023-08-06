@@ -2,31 +2,49 @@
 /* eslint-disable */
 
 declare namespace API {
+  type Image = {
+    id: string;
+    url: string;
+    type: string;
+    post_id?: string;
+  };
+
+  /**
+   * agent 信息
+   */
+  type Post = {
+    id: string;
+    title: string;
+    description: string | null;
+    is_release: boolean;
+    content: string;
+    release_date: Date | null;
+    category_id: string | null;
+    created_at: Date;
+    update_at: Date;
+    images: Image[];
+  };
+
+  type Category = {
+    id: string;
+    name: string;
+  };
+
+  type Tag = {
+    id: string;
+    name: string;
+  };
+
   type CurrentUser = {
-    name?: string;
-    avatar?: string;
-    userid?: string;
-    email?: string;
-    signature?: string;
-    title?: string;
-    group?: string;
-    tags?: { key?: string; label?: string }[];
-    notifyCount?: number;
-    unreadCount?: number;
-    country?: string;
-    access?: string;
-    geographic?: {
-      province?: { label?: string; key?: string };
-      city?: { label?: string; key?: string };
-    };
-    address?: string;
-    phone?: string;
+    username: string;
   };
 
   type LoginResult = {
-    status?: string;
-    type?: string;
-    currentAuthority?: string;
+    code?: string;
+    message?: string;
+    data?: {
+      access_token?: string;
+    };
   };
 
   type PageParams = {
