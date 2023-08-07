@@ -23,7 +23,6 @@ import {
 import { DrawerForm, ProFormText, ProFormGroup } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
 import { DeployDetail } from './detail';
-import { FormattedMessage } from '@umijs/max';
 import breaks from '@bytemd/plugin-breaks';
 import frontMatter from '@bytemd/plugin-frontmatter';
 import gemoji from '@bytemd/plugin-gemoji';
@@ -139,12 +138,25 @@ const PostList: React.FC = () => {
     });
     return [
       {
-        //TODO: 需要修改图片服务器的问题
         url,
         alt: id,
         title: name,
       },
     ];
+  };
+
+  const getImagesFromPostContent = (postContent: string) => {
+    const images: { id: string; type: string }[] = [];
+    const regex = /!\[(.*?)\]\((.*?)\)/g;
+    let result;
+    while ((result = regex.exec(postContent))) {
+      const image = {
+        type: 'POST',
+        id: result[1],
+      };
+      images.push(image);
+    }
+    return images;
   };
 
   /**
@@ -266,9 +278,7 @@ const PostList: React.FC = () => {
         <FooterToolbar
           extra={
             <div>
-              选择 <a style={{ fontWeight: 600 }}>{selectedRowsState.length}</a>{' '}
-              <FormattedMessage id="pages.searchTable.item" defaultMessage="项" />
-              &nbsp;&nbsp;
+              选择 <a style={{ fontWeight: 600 }}>{selectedRowsState.length}</a> 项 &nbsp;&nbsp;
             </div>
           }
         >
@@ -296,8 +306,13 @@ const PostList: React.FC = () => {
           if (formData && formData.id) {
             // success = await handleUpdate(formData as API.AgentInfo);
           } else {
+            value.images = [];
             value.content = postContent;
-            value.images = postImagesRef.current || [];
+            const postImages = getImagesFromPostContent(postContent);
+            if (postImagesRef.current) {
+              value.images = [...postImagesRef.current] || [];
+            }
+            value.images = [...value.images, ...postImages];
             value.is_release = !!value.is_release;
             success = await handleAdd(value as API.Post);
           }
