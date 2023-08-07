@@ -3,18 +3,20 @@
 import { request } from '@umijs/max';
 
 export async function getPostInfo(
-  params: {
-    current?: number;
-    pageSize?: number;
-  },
-  options?: Record<string, any>,
+  { current, pageSize: page_size }: any,
+  sort?: Record<string, any>,
+  filter?: Record<string, any>,
 ) {
   return request<API.Post[]>('/api/post', {
     method: 'GET',
     params: {
-      ...params,
+      ...{
+        current,
+        page_size,
+      },
+      ...(sort || {}),
+      ...(filter || {}),
     },
-    ...(options || {}),
   });
 }
 

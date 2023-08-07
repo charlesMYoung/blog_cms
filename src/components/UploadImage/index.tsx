@@ -50,27 +50,20 @@ export const UploadImage = ({ onUpload, onRemove }: UploadImageProps) => {
   };
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        zIndex: 999,
-      }}
-    >
-      <ImgCrop rotationSlider aspect={1.7} showGrid showReset>
-        <Upload
-          action={uploadUrl}
-          headers={{
-            Authorization: `Bearer ${session.get('app_access_token')}`,
-          }}
-          listType="picture-card"
-          fileList={fileList}
-          onChange={onChange}
-          onPreview={onPreview}
-          onRemove={onRemoveHandle}
-        >
-          {fileList.length < 1 && '+ 上传图片'}
-        </Upload>
-      </ImgCrop>
-    </div>
+    <ImgCrop rotationSlider aspect={1.7} showGrid showReset>
+      <Upload
+        action={uploadUrl}
+        headers={{
+          Authorization: `Bearer ${session.get('app_access_token')}`,
+        }}
+        listType="picture-card"
+        fileList={fileList}
+        onChange={onChange}
+        onPreview={onPreview}
+        onRemove={onRemoveHandle}
+      >
+        {fileList.length < 1 && '+ 上传图片'}
+      </Upload>
+    </ImgCrop>
   );
 };

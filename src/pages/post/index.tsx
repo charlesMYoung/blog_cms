@@ -1,5 +1,6 @@
 import { Button, message, Form } from 'antd';
 import React, { useState, useRef } from 'react';
+import 'juejin-markdown-themes/dist/juejin.min.css';
 import {
   PageContainer,
   FooterToolbar,
@@ -159,15 +160,12 @@ const PostList: React.FC = () => {
     return images;
   };
 
-  /**
-   * @en-US International configuration
-   * @zh-CN 国际化配置
-   * */
   const columns: ProColumns<API.Post>[] = [
     {
       title: 'id',
       dataIndex: 'id',
       hideInForm: true,
+      hideInSearch: true,
       render: (dom, entity) => {
         return (
           <a
@@ -188,13 +186,14 @@ const PostList: React.FC = () => {
       dataIndex: 'title',
       hideInForm: true,
       ellipsis: true,
-      hideInSearch: true,
     },
     {
       title: '是否发布',
       dataIndex: 'is_release',
       hideInForm: true,
       ellipsis: true,
+      onFilter: true,
+      filters: true,
       hideInSearch: true,
       render(_, entity) {
         return <>{entity.is_release ? '是' : '否'}</>;
@@ -205,9 +204,11 @@ const PostList: React.FC = () => {
       hideInForm: true,
       valueType: 'dateTime',
       dataIndex: 'created_at',
+      sorter: true,
     },
     {
       title: '更新时间',
+      sorter: true,
       hideInForm: true,
       valueType: 'dateTime',
       dataIndex: 'modified_at',
@@ -325,15 +326,24 @@ const PostList: React.FC = () => {
         }}
       >
         <ProFormText name="id" hidden />
-        <Editor
-          value={postContent}
-          plugins={plugins}
-          uploadImages={onEditUploadHandle}
-          onChange={throttle((markContent: string) => {
-            setPostContent(markContent);
-          }, 2000)}
-        ></Editor>
-        <UploadImage onRemove={onRemoveHandle} onUpload={onUploadHandle}></UploadImage>
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 999,
+          }}
+        >
+          <Editor
+            value={postContent}
+            plugins={plugins}
+            uploadImages={onEditUploadHandle}
+            onChange={throttle((markContent: string) => {
+              setPostContent(markContent);
+            }, 2000)}
+          ></Editor>
+        </div>
+        <ProFormGroup title={'封面海报'}>
+          <UploadImage onRemove={onRemoveHandle} onUpload={onUploadHandle}></UploadImage>
+        </ProFormGroup>
         <ProFormGroup title={'博客分类'}>
           <ProFormSelect
             width={'lg'}
