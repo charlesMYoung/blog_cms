@@ -28,9 +28,8 @@ const Images: React.FC = () => {
             render: (_, row) => {
               return (
                 <Space size={0}>
-                  <Tag color="blue" key={row.type}>
-                    {row.type}
-                  </Tag>
+                  <Tag color="blue">{row.type}</Tag>
+                  {row.post_id ? <Tag color="red">占用</Tag> : <Tag color="blue">未占用</Tag>}
                 </Space>
               );
             },
@@ -41,7 +40,7 @@ const Images: React.FC = () => {
           avatar: {},
           content: {
             render: (_, row) => {
-              return <Image src={'http://localhost:3000/' + row.url}>{row.type}</Image>;
+              return <Image src={row.url}>{row.type}</Image>;
             },
           },
           actions: {

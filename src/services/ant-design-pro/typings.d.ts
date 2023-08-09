@@ -24,6 +24,8 @@ declare namespace API {
     created_at: Date;
     update_at: Date;
     images: Image[];
+    category?: Category;
+    tags?: { tag: Tag }[];
   };
 
   type Category = {

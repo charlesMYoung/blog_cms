@@ -40,7 +40,7 @@ export function DeployDetail({
   const ref = useRef<ActionType>();
 
   return (
-    <Drawer width="50%" open={open} onClose={onClose} closable={false}>
+    <Drawer width="80%" open={open} onClose={onClose} closable={false}>
       {currentRow?.id && (
         <>
           <ProDescriptions<API.Post>

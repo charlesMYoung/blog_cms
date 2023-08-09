@@ -2,31 +2,30 @@ import { session } from '@/utils';
 import { Upload, UploadFile, UploadProps } from 'antd';
 import ImgCrop from 'antd-img-crop';
 import { RcFile } from 'antd/es/upload';
-import React, { useState } from 'react';
+import React from 'react';
 
 const uploadUrl = '/api/image/upload';
 
 export interface UploadImageProps {
-  onUpload: (imageData: API.Image) => void;
+  onUpload: (imageData: API.Image, files: UploadFile[]) => void;
   onRemove: (imageId: string) => void;
+  imageList: UploadFile[];
 }
 
-export const UploadImage = ({ onUpload, onRemove }: UploadImageProps) => {
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
-
+export const UploadImage = ({ onUpload, onRemove, imageList }: UploadImageProps) => {
   const onChange: UploadProps<{ data: API.Image }>['onChange'] = ({
     fileList: newFileList,
     event,
     file,
   }) => {
-    console.log('fileList--->', fileList, event, 'file-->', file);
+    console.log('fileList--->', newFileList, event, 'file-->', file);
     const { response } = file;
+    const data = response?.data || ({} as API.Image);
     if (response) {
-      const data = response.data;
       data.type = 'COVER'; // 封面图片
-      onUpload(data);
     }
-    setFileList(newFileList);
+    onUpload(data, newFileList);
+    // setFileList(newFileList);
   };
 
   const onPreview = async (file: UploadFile) => {
@@ -45,7 +44,6 @@ export const UploadImage = ({ onUpload, onRemove }: UploadImageProps) => {
   };
 
   const onRemoveHandle = (file: UploadFile) => {
-    console.log('onRemoveHandle fileList--->', fileList, 'file-->', file);
     onRemove(file.response.data.id);
   };
 
@@ -57,12 +55,12 @@ export const UploadImage = ({ onUpload, onRemove }: UploadImageProps) => {
           Authorization: `Bearer ${session.get('app_access_token')}`,
         }}
         listType="picture-card"
-        fileList={fileList}
+        fileList={imageList}
         onChange={onChange}
         onPreview={onPreview}
         onRemove={onRemoveHandle}
       >
-        {fileList.length < 1 && '+ 上传图片'}
+        {imageList.length < 1 && '+ 上传图片'}
       </Upload>
     </ImgCrop>
   );

@@ -1,4 +1,4 @@
-import { Button, message, Form } from 'antd';
+import { Button, message, Form, UploadFile } from 'antd';
 import React, { useState, useRef } from 'react';
 import 'juejin-markdown-themes/dist/juejin.min.css';
 import {
@@ -20,6 +20,7 @@ import {
   getAllTags,
   addCategory,
   addTags,
+  updatePost,
 } from '@/services/post';
 import { DrawerForm, ProFormText, ProFormGroup } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
@@ -35,7 +36,7 @@ import mermaid from '@bytemd/plugin-mermaid';
 import { UploadImage } from '@/components/UploadImage';
 import { Editor } from '@bytemd/react';
 import throttle from 'lodash/throttle';
-import { addImage } from '@/services/images';
+import { addImage, removeImage } from '@/services/images';
 
 const plugins = [
   gfm(),
@@ -102,15 +103,21 @@ const PostList: React.FC = () => {
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [showTagModal, setShowTagModal] = useState<boolean>(false);
   const postImagesRef = useRef<API.Image[]>();
+  const [imageList, setImageList] = useState<UploadFile[]>([]);
 
   const [postContent, setPostContent] = useState<string>('');
 
-  const onRemoveHandle = (imageId: string) => {
+  const onRemoveHandle = async (imageId: string) => {
     // postImagesRef.current = [];
+    await removeImage({
+      data: {
+        ids: [imageId],
+      },
+    });
+    message.success('删除图片成功');
     postImagesRef.current = postImagesRef.current?.filter((item) => item.id !== imageId);
   };
-  const onUploadHandle = (postCoverImage: API.Image) => {
-    console.log('onUploadHandle postCoverImage--->', postCoverImage);
+  const onUploadHandle = (postCoverImage: API.Image, newFiles: UploadFile[]) => {
     const hasExistPostImage = postImagesRef.current?.find((item) => item.id !== postCoverImage.id);
     if (!hasExistPostImage) {
       postImagesRef.current?.push(postCoverImage);
@@ -122,6 +129,7 @@ const PostList: React.FC = () => {
         item.type = 'POST';
       }
     });
+    setImageList(newFiles);
   };
 
   const onEditUploadHandle = async (_files: File[]) => {
@@ -140,8 +148,8 @@ const PostList: React.FC = () => {
     return [
       {
         url,
-        alt: id,
-        title: name,
+        alt: `Nico_${id}`,
+        title: `Nico_${name}`,
       },
     ];
   };
@@ -151,11 +159,15 @@ const PostList: React.FC = () => {
     const regex = /!\[(.*?)\]\((.*?)\)/g;
     let result;
     while ((result = regex.exec(postContent))) {
-      const image = {
-        type: 'POST',
-        id: result[1],
-      };
-      images.push(image);
+      const originId = result[1];
+      if (originId && originId.startsWith('Nico_')) {
+        const [, imageId] = originId.split('Nico_');
+        const image = {
+          type: 'POST',
+          id: imageId,
+        };
+        images.push(image);
+      }
     }
     return images;
   };
@@ -186,6 +198,15 @@ const PostList: React.FC = () => {
       dataIndex: 'title',
       hideInForm: true,
       ellipsis: true,
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      hideInForm: true,
+      ellipsis: true,
+      hideInTable: true,
+      hideInSearch: true,
+      valueType: 'textarea',
     },
     {
       title: '是否发布',
@@ -221,12 +242,35 @@ const PostList: React.FC = () => {
         <Button
           key="edit"
           type="link"
-          disabled
           onClick={async () => {
-            actionRef.current?.reloadAndRest?.();
+            console.log('record---->', record);
+            postImagesRef.current = [];
+            const coverImage =
+              record.images?.find((item) => item.type === 'COVER') || ({} as API.Image);
+            if (coverImage) {
+              postImagesRef.current?.push(coverImage);
+            }
+
+            setImageList([
+              {
+                uid: coverImage.id,
+                name: coverImage.name,
+                status: 'done',
+                url: coverImage.url,
+              },
+            ]);
+
+            editForm.setFieldsValue({
+              ...record,
+              category_id: record?.category?.id || '',
+              tag_ids: record?.tags?.map((item) => item.tag.id) || [],
+            });
+
+            setPostContent(record.content);
+            handleModalVisible(true);
           }}
         >
-          恢复
+          编辑
         </Button>,
         <Button
           danger
@@ -303,18 +347,20 @@ const PostList: React.FC = () => {
         onOpenChange={handleModalVisible}
         onFinish={async (value) => {
           const formData = await editForm.validateFields();
+
           let success;
+          value.images = [];
+          value.content = postContent;
+          const postImages = getImagesFromPostContent(postContent);
+          if (postImagesRef.current) {
+            value.images = [...postImagesRef.current] || [];
+          }
+          value.images = [...value.images, ...postImages];
+          value.is_release = !!value.is_release;
+
           if (formData && formData.id) {
-            // success = await handleUpdate(formData as API.AgentInfo);
+            success = await updatePost(formData as API.Post);
           } else {
-            value.images = [];
-            value.content = postContent;
-            const postImages = getImagesFromPostContent(postContent);
-            if (postImagesRef.current) {
-              value.images = [...postImagesRef.current] || [];
-            }
-            value.images = [...value.images, ...postImages];
-            value.is_release = !!value.is_release;
             success = await handleAdd(value as API.Post);
           }
           if (success) {
@@ -342,7 +388,11 @@ const PostList: React.FC = () => {
           ></Editor>
         </div>
         <ProFormGroup title={'封面海报'}>
-          <UploadImage onRemove={onRemoveHandle} onUpload={onUploadHandle}></UploadImage>
+          <UploadImage
+            onRemove={onRemoveHandle}
+            onUpload={onUploadHandle}
+            imageList={imageList}
+          ></UploadImage>
         </ProFormGroup>
         <ProFormGroup title={'博客分类'}>
           <ProFormSelect

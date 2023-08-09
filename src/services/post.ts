@@ -42,6 +42,18 @@ export async function addPost(options?: Record<string, any>) {
 }
 
 /**
+ * 新增agent
+ * @param options
+ * @returns
+ */
+export async function updatePost(options?: Record<string, any>) {
+  return request<Record<string, any>>('/api/post', {
+    method: 'PUT',
+    ...(options || {}),
+  });
+}
+
+/**
  * 卸载agent
  * @param options
  * @returns
