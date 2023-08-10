@@ -7,25 +7,19 @@ import React from 'react';
 const uploadUrl = '/api/image/upload';
 
 export interface UploadImageProps {
-  onUpload: (imageData: API.Image, files: UploadFile[]) => void;
+  onUpload: (imageData: API.Image, files: UploadFile[], status?: string) => void;
   onRemove: (imageId: string) => void;
   imageList: UploadFile[];
 }
 
 export const UploadImage = ({ onUpload, onRemove, imageList }: UploadImageProps) => {
-  const onChange: UploadProps<{ data: API.Image }>['onChange'] = ({
-    fileList: newFileList,
-    event,
-    file,
-  }) => {
-    console.log('fileList--->', newFileList, event, 'file-->', file);
+  const onChange: UploadProps<{ data: API.Image }>['onChange'] = ({ fileList, file }) => {
     const { response } = file;
     const data = response?.data || ({} as API.Image);
     if (response) {
       data.type = 'COVER'; // 封面图片
     }
-    onUpload(data, newFileList);
-    // setFileList(newFileList);
+    onUpload(data, fileList, file.status);
   };
 
   const onPreview = async (file: UploadFile) => {
