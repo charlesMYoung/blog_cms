@@ -10,6 +10,9 @@ import {
   ProFormSwitch,
   ModalForm,
   ProForm,
+  DrawerForm,
+  ProFormText,
+  ProFormGroup,
 } from '@ant-design/pro-components';
 import type { ProColumns, ActionType } from '@ant-design/pro-components';
 import {
@@ -22,7 +25,6 @@ import {
   addTags,
   updatePost,
 } from '@/services/post';
-import { DrawerForm, ProFormText, ProFormGroup } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
 import { DeployDetail } from './detail';
 import breaks from '@bytemd/plugin-breaks';
@@ -36,6 +38,7 @@ import mermaid from '@bytemd/plugin-mermaid';
 import { UploadImage } from '@/components/UploadImage';
 import { Editor } from '@bytemd/react';
 import throttle from 'lodash/throttle';
+import isEmpty from 'lodash/isEmpty';
 import { addImage, removeImage } from '@/services/images';
 
 const plugins = [
@@ -117,7 +120,15 @@ const PostList: React.FC = () => {
     message.success('删除图片成功');
     postImagesRef.current = postImagesRef.current?.filter((item) => item.id !== imageId);
   };
-  const onUploadHandle = (postCoverImage: API.Image, newFiles: UploadFile[]) => {
+  const onUploadHandle = (
+    postCoverImage: API.Image,
+    newFiles: UploadFile[],
+    uploadStatus?: string,
+  ) => {
+    setImageList(newFiles);
+    if (uploadStatus !== 'done') {
+      return;
+    }
     const hasExistPostImage = postImagesRef.current?.find((item) => item.id !== postCoverImage.id);
     if (!hasExistPostImage) {
       postImagesRef.current?.push(postCoverImage);
@@ -129,7 +140,6 @@ const PostList: React.FC = () => {
         item.type = 'POST';
       }
     });
-    setImageList(newFiles);
   };
 
   const onEditUploadHandle = async (_files: File[]) => {
@@ -177,7 +187,13 @@ const PostList: React.FC = () => {
       title: 'id',
       dataIndex: 'id',
       hideInForm: true,
+      hideInTable: true,
       hideInSearch: true,
+    },
+    {
+      title: '博客标题',
+      dataIndex: 'title',
+      hideInForm: true,
       render: (dom, entity) => {
         return (
           <a
@@ -192,12 +208,6 @@ const PostList: React.FC = () => {
           </a>
         );
       },
-    },
-    {
-      title: '博客标题',
-      dataIndex: 'title',
-      hideInForm: true,
-      ellipsis: true,
     },
     {
       title: '描述',
@@ -243,22 +253,25 @@ const PostList: React.FC = () => {
           key="edit"
           type="link"
           onClick={async () => {
-            console.log('record---->', record);
             postImagesRef.current = [];
             const coverImage =
               record.images?.find((item) => item.type === 'COVER') || ({} as API.Image);
-            if (coverImage) {
+            // 不为空的时候才push
+            if (!isEmpty(coverImage)) {
               postImagesRef.current?.push(coverImage);
             }
-
-            setImageList([
-              {
-                uid: coverImage.id,
-                name: coverImage.name,
-                status: 'done',
-                url: coverImage.url,
-              },
-            ]);
+            if (postImagesRef.current.length === 1) {
+              setImageList([
+                {
+                  uid: coverImage.id,
+                  name: coverImage.name,
+                  status: 'done',
+                  url: coverImage.url,
+                },
+              ]);
+            } else {
+              setImageList([]);
+            }
 
             editForm.setFieldsValue({
               ...record,
