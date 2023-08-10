@@ -38,7 +38,12 @@ export const UploadImage = ({ onUpload, onRemove, imageList }: UploadImageProps)
   };
 
   const onRemoveHandle = (file: UploadFile) => {
-    onRemove(file.response.data.id);
+    console.log('file', file);
+    if (file?.response?.data?.id) {
+      onRemove(file.response.data.id);
+    } else {
+      onRemove(file.uid);
+    }
   };
 
   return (

@@ -65,7 +65,23 @@ const handleAdd = async (fields: API.Post) => {
     return true;
   } catch (error) {
     hide();
-    message.error(`新增失败请重试 ${error}`);
+    return false;
+  }
+};
+
+const handleUpdate = async (fields: API.Post) => {
+  const hide = message.loading('正在更新');
+  try {
+    await updatePost({
+      data: {
+        ...fields,
+      },
+    });
+    hide();
+    message.success('更新成功');
+    return true;
+  } catch (error) {
+    hide();
     return false;
   }
 };
@@ -360,7 +376,6 @@ const PostList: React.FC = () => {
         onOpenChange={handleModalVisible}
         onFinish={async (value) => {
           const formData = await editForm.validateFields();
-
           let success;
           value.images = [];
           value.content = postContent;
@@ -372,7 +387,10 @@ const PostList: React.FC = () => {
           value.is_release = !!value.is_release;
 
           if (formData && formData.id) {
-            success = await updatePost(formData as API.Post);
+            success = await handleUpdate({
+              ...formData,
+              ...value,
+            } as API.Post);
           } else {
             success = await handleAdd(value as API.Post);
           }
@@ -514,7 +532,6 @@ const PostList: React.FC = () => {
         }}
         submitTimeout={2000}
         onFinish={async (values) => {
-          console.log(values.name);
           await addCategory({
             data: {
               name: values.name,
@@ -551,7 +568,6 @@ const PostList: React.FC = () => {
         }}
         submitTimeout={2000}
         onFinish={async (values) => {
-          console.log(values.name);
           await addTags({
             data: {
               name: values.name,
