@@ -66,28 +66,28 @@ export async function removePost(options?: Record<string, any>) {
 }
 
 export async function getAllTags() {
-  return request<API.Tag[]>('/api/tag', {
+  return request<{ data: API.Tag[] }>('/api/tag', {
     method: 'GET',
     params: {},
   });
 }
 
 export async function addTags(options?: Record<string, any>) {
-  return request<API.Tag[]>('/api/tag', {
+  return request<{ id: string }>('/api/tag', {
     method: 'Post',
     ...(options || {}),
   });
 }
 
 export async function addCategory(options?: Record<string, any>) {
-  return request<API.Tag[]>('/api/category', {
+  return request<{ id: string }>('/api/category', {
     method: 'Post',
     ...(options || {}),
   });
 }
 
 export async function getCategory() {
-  return request<API.Category[]>('/api/category', {
+  return request<{ data: API.Category[] }>('/api/category', {
     method: 'GET',
     params: {},
   });

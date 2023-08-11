@@ -1,4 +1,4 @@
-import { Button, message, Form, UploadFile } from 'antd';
+import { Button, message, Form, UploadFile, Tag } from 'antd';
 import React, { useState, useRef } from 'react';
 import 'juejin-markdown-themes/dist/juejin.min.css';
 import {
@@ -8,8 +8,6 @@ import {
   ProFormTextArea,
   ProFormSelect,
   ProFormSwitch,
-  ModalForm,
-  ProForm,
   DrawerForm,
   ProFormText,
   ProFormGroup,
@@ -40,6 +38,7 @@ import { Editor } from '@bytemd/react';
 import throttle from 'lodash/throttle';
 import isEmpty from 'lodash/isEmpty';
 import { addImage, removeImage } from '@/services/images';
+import { ConfirmCate } from '@/components/ConfirmCategory';
 
 const plugins = [
   gfm(),
@@ -111,6 +110,46 @@ const handleRemove = async (selectedRows: API.Post[]) => {
   }
 };
 
+const getImagesFromPostContent = (postContent: string) => {
+  const images: { id: string; type: string }[] = [];
+  const regex = /!\[(.*?)\]\((.*?)\)/g;
+  let result;
+  while ((result = regex.exec(postContent))) {
+    const originId = result[1];
+    if (originId && originId.startsWith('Nico_')) {
+      const [, imageId] = originId.split('Nico_');
+      const image = {
+        type: 'POST',
+        id: imageId,
+      };
+      images.push(image);
+    }
+  }
+  return images;
+};
+
+const onEditUploadHandle = async (_files: File[]) => {
+  console.log(_files);
+  const file = _files[0];
+  const formData = new FormData();
+  if (file.name) formData.append('file', file);
+  const {
+    data: { url, name, id },
+  } = await addImage({
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    data: formData,
+  });
+  return [
+    {
+      url,
+      alt: `Nico_${id}`,
+      title: `Nico_${name}`,
+    },
+  ];
+};
+
 const PostList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
@@ -123,6 +162,8 @@ const PostList: React.FC = () => {
   const [showTagModal, setShowTagModal] = useState<boolean>(false);
   const postImagesRef = useRef<API.Image[]>();
   const [imageList, setImageList] = useState<UploadFile[]>([]);
+  const [commonOpts, setCommontOpts] = useState<any>([]);
+  const [tagOpts, setTagOpts] = useState<any>([]);
 
   const [postContent, setPostContent] = useState<string>('');
 
@@ -158,46 +199,6 @@ const PostList: React.FC = () => {
     });
   };
 
-  const onEditUploadHandle = async (_files: File[]) => {
-    console.log(_files);
-    const file = _files[0];
-    const formData = new FormData();
-    if (file.name) formData.append('file', file);
-    const {
-      data: { url, name, id },
-    } = await addImage({
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      data: formData,
-    });
-    return [
-      {
-        url,
-        alt: `Nico_${id}`,
-        title: `Nico_${name}`,
-      },
-    ];
-  };
-
-  const getImagesFromPostContent = (postContent: string) => {
-    const images: { id: string; type: string }[] = [];
-    const regex = /!\[(.*?)\]\((.*?)\)/g;
-    let result;
-    while ((result = regex.exec(postContent))) {
-      const originId = result[1];
-      if (originId && originId.startsWith('Nico_')) {
-        const [, imageId] = originId.split('Nico_');
-        const image = {
-          type: 'POST',
-          id: imageId,
-        };
-        images.push(image);
-      }
-    }
-    return images;
-  };
-
   const columns: ProColumns<API.Post>[] = [
     {
       title: 'id',
@@ -205,6 +206,34 @@ const PostList: React.FC = () => {
       hideInForm: true,
       hideInTable: true,
       hideInSearch: true,
+    },
+    {
+      title: '博客分类',
+      dataIndex: 'category',
+      hideInForm: true,
+      hideInTable: true,
+      hideInSearch: true,
+      valueType: 'text',
+      render(dom, entity) {
+        return entity.category?.name;
+      },
+    },
+    {
+      title: '博客标签',
+      dataIndex: 'tags',
+      hideInForm: true,
+      hideInTable: true,
+      hideInSearch: true,
+      valueType: 'text',
+      render(dom, entity) {
+        return entity.tags?.map((item) => {
+          return (
+            <Tag color="blue" key={item.tag.id}>
+              {item.tag.name}
+            </Tag>
+          );
+        });
+      },
     },
     {
       title: '博客标题',
@@ -315,7 +344,6 @@ const PostList: React.FC = () => {
       ],
     },
   ];
-
   return (
     <PageContainer>
       <ProTable<API.Post, API.PageParams>
@@ -428,25 +456,30 @@ const PostList: React.FC = () => {
         <ProFormGroup title={'博客分类'}>
           <ProFormSelect
             width={'lg'}
+            options={commonOpts}
             fieldProps={{
               searchOnFocus: true,
-            }}
-            request={() => {
-              return getCategory().then((resp: any) => {
-                return resp.data.map((item: API.Category) => {
-                  return {
-                    value: item.id,
-                    label: item.name,
-                  };
-                });
-              });
+              onDropdownVisibleChange(open) {
+                if (open) {
+                  getCategory().then((resp) => {
+                    const data = resp.data.map((item: API.Category) => {
+                      return {
+                        value: item.id,
+                        label: item.name,
+                      };
+                    });
+                    setCommontOpts(data);
+                  });
+                }
+              },
             }}
             name="category_id"
             label={
               <>
                 {'博客分类 '}
+                &nbsp;
                 <Button
-                  type="primary"
+                  type="dashed"
                   size="small"
                   icon={<PlusOutlined />}
                   onClick={() => {
@@ -462,24 +495,29 @@ const PostList: React.FC = () => {
           <ProFormSelect
             fieldProps={{
               mode: 'tags',
+              onDropdownVisibleChange(open) {
+                if (open) {
+                  getAllTags().then((resp) => {
+                    const data = resp.data.map((item: API.Tag) => {
+                      return {
+                        value: item.id,
+                        label: item.name,
+                      };
+                    });
+                    setTagOpts(data);
+                  });
+                }
+              },
             }}
             width={'lg'}
-            request={() => {
-              return getAllTags().then((resp: any) => {
-                return resp.data.map((item: API.Tag) => {
-                  return {
-                    value: item.id,
-                    label: item.name,
-                  };
-                });
-              });
-            }}
+            options={tagOpts}
             name="tag_ids"
             label={
               <>
                 {'博客标签'}
+                &nbsp;
                 <Button
-                  type="primary"
+                  type="dashed"
                   size="small"
                   icon={<PlusOutlined />}
                   onClick={() => {
@@ -515,79 +553,41 @@ const PostList: React.FC = () => {
           ]}
           name="title"
         />
+        <ConfirmCate
+          title={'添加类别'}
+          showOpen={showCategoryModal}
+          onClose={() => {
+            setShowCategoryModal(false);
+          }}
+          onFinish={async ({ name }) => {
+            await addCategory({
+              data: {
+                name: name,
+              },
+            });
+            setShowCategoryModal(false);
+            message.success('提交成功');
+          }}
+        ></ConfirmCate>
+
+        <ConfirmCate
+          title={'添加标签'}
+          showOpen={showTagModal}
+          onClose={() => {
+            setShowTagModal(false);
+          }}
+          onFinish={async ({ name }) => {
+            await addTags({
+              data: {
+                name: name,
+              },
+            });
+            setShowTagModal(false);
+            message.success('提交成功');
+          }}
+        ></ConfirmCate>
       </DrawerForm>
 
-      <ModalForm<{
-        name: string;
-      }>
-        title="添加类别"
-        open={showCategoryModal}
-        form={form}
-        autoFocusFirstInput
-        modalProps={{
-          destroyOnClose: true,
-          onCancel: () => {
-            setShowCategoryModal(false);
-          },
-        }}
-        submitTimeout={2000}
-        onFinish={async (values) => {
-          await addCategory({
-            data: {
-              name: values.name,
-            },
-          });
-          setShowCategoryModal(false);
-          message.success('提交成功');
-          return true;
-        }}
-      >
-        <ProForm.Group>
-          <ProFormText
-            width="lg"
-            name="name"
-            label="标签类别"
-            tooltip="最长为 24 位"
-            placeholder="请输入名称"
-          />
-        </ProForm.Group>
-      </ModalForm>
-
-      <ModalForm<{
-        name: string;
-      }>
-        title="添加新标签"
-        open={showTagModal}
-        form={form}
-        autoFocusFirstInput
-        modalProps={{
-          destroyOnClose: true,
-          onCancel: () => {
-            setShowTagModal(false);
-          },
-        }}
-        submitTimeout={2000}
-        onFinish={async (values) => {
-          await addTags({
-            data: {
-              name: values.name,
-            },
-          });
-          setShowTagModal(false);
-          message.success('提交成功');
-          return true;
-        }}
-      >
-        <ProForm.Group>
-          <ProFormText
-            width="lg"
-            name="name"
-            label="标签类别"
-            tooltip="最长为 24 位"
-            placeholder="请输入名称"
-          />
-        </ProForm.Group>
-      </ModalForm>
       <DeployDetail
         open={showDetail}
         onClose={() => {
