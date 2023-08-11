@@ -1,4 +1,4 @@
-import { Button, message, Form, UploadFile, Tag } from 'antd';
+import { Button, message, Form, UploadFile, Tag, Image } from 'antd';
 import React, { useState, useRef } from 'react';
 import 'juejin-markdown-themes/dist/juejin.min.css';
 import {
@@ -207,6 +207,26 @@ const PostList: React.FC = () => {
       hideInTable: true,
       hideInSearch: true,
     },
+
+    {
+      title: '博客标题',
+      dataIndex: 'title',
+      hideInForm: true,
+      render: (dom, entity) => {
+        return (
+          <a
+            onClick={() => {
+              if (entity) {
+                setCurrentRow(entity);
+                setShowDetail(true);
+              }
+            }}
+          >
+            {dom}
+          </a>
+        );
+      },
+    },
     {
       title: '博客分类',
       dataIndex: 'category',
@@ -236,22 +256,15 @@ const PostList: React.FC = () => {
       },
     },
     {
-      title: '博客标题',
-      dataIndex: 'title',
+      title: '海报',
+      dataIndex: 'images',
       hideInForm: true,
-      render: (dom, entity) => {
-        return (
-          <a
-            onClick={() => {
-              if (entity) {
-                setCurrentRow(entity);
-                setShowDetail(true);
-              }
-            }}
-          >
-            {dom}
-          </a>
-        );
+      hideInTable: true,
+      hideInSearch: true,
+      valueType: 'image',
+      render(dom, entity) {
+        const imageUrl = entity.images.find((item) => item.type === 'COVER')?.url;
+        return imageUrl ? <Image src={imageUrl} width="400px"></Image> : '暂无图片';
       },
     },
     {
@@ -363,6 +376,7 @@ const PostList: React.FC = () => {
               setPostContent('');
               postImagesRef.current = [];
               handleModalVisible(true);
+              setImageList([]);
             }}
           >
             <PlusOutlined /> 新增部署
@@ -473,6 +487,15 @@ const PostList: React.FC = () => {
                 }
               },
             }}
+            request={async () => {
+              const { data } = await getCategory();
+              return data.map((item: API.Category) => {
+                return {
+                  value: item.id,
+                  label: item.name,
+                };
+              });
+            }}
             name="category_id"
             label={
               <>
@@ -508,6 +531,15 @@ const PostList: React.FC = () => {
                   });
                 }
               },
+            }}
+            request={async () => {
+              const { data } = await getAllTags();
+              return data.map((item: API.Tag) => {
+                return {
+                  value: item.id,
+                  label: item.name,
+                };
+              });
             }}
             width={'lg'}
             options={tagOpts}
