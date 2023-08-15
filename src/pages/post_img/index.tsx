@@ -21,7 +21,10 @@ const Images: React.FC = () => {
         grid={{ gutter: 16, column: 2 }}
         metas={{
           title: {
-            dataIndex: 'id',
+            dataIndex: 'Post',
+            render(dom, entity) {
+              return <span>{entity.Post?.title}</span>;
+            },
           },
           subTitle: {
             dataIndex: 'type',

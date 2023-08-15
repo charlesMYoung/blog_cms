@@ -8,6 +8,9 @@ declare namespace API {
     type: string;
     name: string;
     post_id?: string;
+    Post?: {
+      title: string;
+    };
   };
 
   /**
