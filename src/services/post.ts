@@ -65,7 +65,7 @@ export async function removePost(options?: Record<string, any>) {
   });
 }
 
-export async function getAllTags() {
+export async function getTags() {
   return request<{ data: API.Tag[] }>('/api/tag', {
     method: 'GET',
     params: {},

@@ -1,5 +1,5 @@
 import { Button, message, Form, UploadFile, Tag, Image } from 'antd';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import 'juejin-markdown-themes/dist/juejin.min.css';
 import {
   PageContainer,
@@ -18,10 +18,10 @@ import {
   removePost,
   getPostInfo,
   getCategory,
-  getAllTags,
   addCategory,
   addTags,
   updatePost,
+  getTags,
 } from '@/services/post';
 import { PlusOutlined } from '@ant-design/icons';
 import { DeployDetail } from './detail';
@@ -67,6 +67,26 @@ const handleAdd = async (fields: API.Post) => {
     return false;
   }
 };
+
+async function getAllCategory() {
+  const { data } = await getCategory();
+  return data.map((item: API.Category) => {
+    return {
+      value: item.id,
+      label: item.name,
+    };
+  });
+}
+
+async function getAllTags() {
+  const { data } = await getTags();
+  return data.map((item: API.Tag) => {
+    return {
+      value: item.id,
+      label: item.name,
+    };
+  });
+}
 
 const handleUpdate = async (fields: API.Post) => {
   const hide = message.loading('正在更新');
@@ -162,10 +182,21 @@ const PostList: React.FC = () => {
   const [showTagModal, setShowTagModal] = useState<boolean>(false);
   const postImagesRef = useRef<API.Image[]>();
   const [imageList, setImageList] = useState<UploadFile[]>([]);
-  const [commonOpts, setCommontOpts] = useState<any>([]);
+  const [commonOpts, setCommonOpts] = useState<any>([]);
   const [tagOpts, setTagOpts] = useState<any>([]);
 
   const [postContent, setPostContent] = useState<string>('');
+
+  const initTagAndCategory = async () => {
+    const catas = await getAllCategory();
+    const tags = await getAllTags();
+    setCommonOpts(catas);
+    setTagOpts(tags);
+  };
+
+  useEffect(() => {
+    if (createModalVisible) initTagAndCategory();
+  }, []);
 
   const onRemoveHandle = async (imageId: string) => {
     // postImagesRef.current = [];
@@ -473,28 +504,12 @@ const PostList: React.FC = () => {
             options={commonOpts}
             fieldProps={{
               searchOnFocus: true,
-              onDropdownVisibleChange(open) {
+              async onDropdownVisibleChange(open) {
                 if (open) {
-                  getCategory().then((resp) => {
-                    const data = resp.data.map((item: API.Category) => {
-                      return {
-                        value: item.id,
-                        label: item.name,
-                      };
-                    });
-                    setCommontOpts(data);
-                  });
+                  const data = await getAllCategory();
+                  setCommonOpts(data);
                 }
               },
-            }}
-            request={async () => {
-              const { data } = await getCategory();
-              return data.map((item: API.Category) => {
-                return {
-                  value: item.id,
-                  label: item.name,
-                };
-              });
             }}
             name="category_id"
             label={
@@ -514,32 +529,15 @@ const PostList: React.FC = () => {
             placeholder="请输入博客分类"
             rules={[{ required: true, message: '请选择博客分类' }]}
           ></ProFormSelect>
-
           <ProFormSelect
             fieldProps={{
               mode: 'tags',
-              onDropdownVisibleChange(open) {
+              async onDropdownVisibleChange(open) {
                 if (open) {
-                  getAllTags().then((resp) => {
-                    const data = resp.data.map((item: API.Tag) => {
-                      return {
-                        value: item.id,
-                        label: item.name,
-                      };
-                    });
-                    setTagOpts(data);
-                  });
+                  const data = await getAllTags();
+                  setTagOpts(data);
                 }
               },
-            }}
-            request={async () => {
-              const { data } = await getAllTags();
-              return data.map((item: API.Tag) => {
-                return {
-                  value: item.id,
-                  label: item.name,
-                };
-              });
             }}
             width={'lg'}
             options={tagOpts}
