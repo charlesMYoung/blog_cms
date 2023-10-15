@@ -1,60 +1,26 @@
 import { Button, message, Form, UploadFile, Tag, Image } from 'antd';
-import React, { useState, useRef, useEffect } from 'react';
-import 'juejin-markdown-themes/dist/juejin.min.css';
+import React, { useState, useRef } from 'react';
 import {
   PageContainer,
   FooterToolbar,
   ProTable,
-  ProFormTextArea,
   ProFormSelect,
-  ProFormSwitch,
   DrawerForm,
   ProFormText,
+  ProFormDigit,
   ProFormGroup,
 } from '@ant-design/pro-components';
 import type { ProColumns, ActionType } from '@ant-design/pro-components';
-import {
-  addPost,
-  removePost,
-  getPostInfo,
-  getCategory,
-  addCategory,
-  addTags,
-  updatePost,
-  getTags,
-} from '@/services/post';
 import { PlusOutlined } from '@ant-design/icons';
 import { DeployDetail } from './detail';
-import breaks from '@bytemd/plugin-breaks';
-import frontMatter from '@bytemd/plugin-frontmatter';
-import gemoji from '@bytemd/plugin-gemoji';
-import gfm from '@bytemd/plugin-gfm';
-import highlight from '@bytemd/plugin-highlight';
-import byteMath from '@bytemd/plugin-math';
-import zoom from '@bytemd/plugin-medium-zoom';
-import mermaid from '@bytemd/plugin-mermaid';
-import { UploadImage } from '@/components/UploadImage';
-import { Editor } from '@bytemd/react';
-import throttle from 'lodash/throttle';
 import isEmpty from 'lodash/isEmpty';
 import { addImage, removeImage } from '@/services/images';
-import { ConfirmCate } from '@/components/ConfirmCategory';
+import { addDevice, getDevice, removeDevice, updateDevice } from '@/services/device';
 
-const plugins = [
-  gfm(),
-  breaks(),
-  gemoji(),
-  highlight(),
-  byteMath(),
-  zoom(),
-  mermaid(),
-  frontMatter(),
-];
-
-const handleAdd = async (fields: API.Post) => {
+const handleAdd = async (fields: API.Device) => {
   const hide = message.loading('正在添加');
   try {
-    await addPost({
+    await addDevice({
       data: {
         ...fields,
       },
@@ -68,30 +34,10 @@ const handleAdd = async (fields: API.Post) => {
   }
 };
 
-async function getAllCategory() {
-  const { data } = await getCategory();
-  return data.map((item: API.Category) => {
-    return {
-      value: item.id,
-      label: item.name,
-    };
-  });
-}
-
-async function getAllTags() {
-  const { data } = await getTags();
-  return data.map((item: API.Tag) => {
-    return {
-      value: item.id,
-      label: item.name,
-    };
-  });
-}
-
 const handleUpdate = async (fields: API.Post) => {
   const hide = message.loading('正在更新');
   try {
-    await updatePost({
+    await updateDevice({
       data: {
         ...fields,
       },
@@ -115,7 +61,7 @@ const handleRemove = async (selectedRows: API.Post[]) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
-    await removePost({
+    await removeDevice({
       data: {
         ids: selectedRows.map((row) => row.id),
       },
@@ -128,24 +74,6 @@ const handleRemove = async (selectedRows: API.Post[]) => {
     message.error('删除失败，请重试');
     return false;
   }
-};
-
-const getImagesFromPostContent = (postContent: string) => {
-  const images: { id: string; type: string }[] = [];
-  const regex = /!\[(.*?)\]\((.*?)\)/g;
-  let result;
-  while ((result = regex.exec(postContent))) {
-    const originId = result[1];
-    if (originId && originId.startsWith('Nico_')) {
-      const [, imageId] = originId.split('Nico_');
-      const image = {
-        type: 'POST',
-        id: imageId,
-      };
-      images.push(image);
-    }
-  }
-  return images;
 };
 
 const onEditUploadHandle = async (_files: File[]) => {
@@ -178,25 +106,10 @@ const PostList: React.FC = () => {
   const [editForm] = Form.useForm();
   const [createModalVisible, handleModalVisible] = useState<boolean>(false);
   const [form] = Form.useForm<{ name: string; company: string }>();
-  const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
-  const [showTagModal, setShowTagModal] = useState<boolean>(false);
   const postImagesRef = useRef<API.Image[]>();
   const [imageList, setImageList] = useState<UploadFile[]>([]);
-  const [commonOpts, setCommonOpts] = useState<any>([]);
-  const [tagOpts, setTagOpts] = useState<any>([]);
 
   const [postContent, setPostContent] = useState<string>('');
-
-  const initTagAndCategory = async () => {
-    const catas = await getAllCategory();
-    const tags = await getAllTags();
-    setCommonOpts(catas);
-    setTagOpts(tags);
-  };
-
-  useEffect(() => {
-    if (createModalVisible) initTagAndCategory();
-  }, []);
 
   const onRemoveHandle = async (imageId: string) => {
     // postImagesRef.current = [];
@@ -390,8 +303,8 @@ const PostList: React.FC = () => {
   ];
   return (
     <PageContainer>
-      <ProTable<API.Post, API.PageParams>
-        headerTitle="部署列表"
+      <ProTable<API.Device, API.PageParams>
+        headerTitle="设备列表"
         actionRef={actionRef}
         rowKey="id"
         search={{
@@ -410,10 +323,10 @@ const PostList: React.FC = () => {
               setImageList([]);
             }}
           >
-            <PlusOutlined /> 新增文章
+            <PlusOutlined /> 新增设备
           </Button>,
         ]}
-        request={getPostInfo}
+        request={getDevice}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => {
@@ -442,30 +355,21 @@ const PostList: React.FC = () => {
         </FooterToolbar>
       )}
       <DrawerForm
-        width={'90%'}
-        title="新增博客"
+        width={'40%'}
+        title="新增设备"
         form={editForm}
         open={createModalVisible}
         onOpenChange={handleModalVisible}
         onFinish={async (value) => {
           const formData = await editForm.validateFields();
           let success;
-          value.images = [];
-          value.content = postContent;
-          const postImages = getImagesFromPostContent(postContent);
-          if (postImagesRef.current) {
-            value.images = [...postImagesRef.current] || [];
-          }
-          value.images = [...value.images, ...postImages];
-          value.is_release = !!value.is_release;
-
+          console.log('value----', value);
           if (formData && formData.id) {
             success = await handleUpdate({
               ...formData,
-              ...value,
             } as API.Post);
           } else {
-            success = await handleAdd(value as API.Post);
+            success = await handleAdd(value as API.Device);
           }
           if (success) {
             handleModalVisible(false);
@@ -476,146 +380,35 @@ const PostList: React.FC = () => {
         }}
       >
         <ProFormText name="id" hidden />
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 999,
-          }}
-        >
-          <Editor
-            value={postContent}
-            plugins={plugins}
-            uploadImages={onEditUploadHandle}
-            onChange={throttle((markContent: string) => {
-              setPostContent(markContent);
-            }, 2000)}
-          ></Editor>
-        </div>
-        <ProFormGroup title={'封面海报'}>
-          <UploadImage
-            onRemove={onRemoveHandle}
-            onUpload={onUploadHandle}
-            imageList={imageList}
-          ></UploadImage>
-        </ProFormGroup>
-        <ProFormGroup title={'博客分类'}>
-          <ProFormSelect
-            width={'lg'}
-            options={commonOpts}
-            fieldProps={{
-              searchOnFocus: true,
-              async onDropdownVisibleChange(open) {
-                if (open) {
-                  const data = await getAllCategory();
-                  setCommonOpts(data);
-                }
-              },
-            }}
-            name="category_id"
-            label={
-              <>
-                {'博客分类 '}
-                &nbsp;
-                <Button
-                  type="dashed"
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    setShowCategoryModal(true);
-                  }}
-                ></Button>
-              </>
-            }
-            placeholder="请输入博客分类"
-            rules={[{ required: true, message: '请选择博客分类' }]}
-          ></ProFormSelect>
-          <ProFormSelect
-            fieldProps={{
-              mode: 'tags',
-              async onDropdownVisibleChange(open) {
-                if (open) {
-                  const data = await getAllTags();
-                  setTagOpts(data);
-                }
-              },
-            }}
-            width={'lg'}
-            options={tagOpts}
-            name="tag_ids"
-            label={
-              <>
-                {'博客标签'}
-                &nbsp;
-                <Button
-                  type="dashed"
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    setShowTagModal(true);
-                  }}
-                ></Button>
-              </>
-            }
-            placeholder="请输入博客标签"
-            rules={[{ required: true, message: '请选择博客标签' }]}
-          ></ProFormSelect>
-        </ProFormGroup>
-        <ProFormSwitch name="is_release" label="是否发布" />
-        <ProFormTextArea
-          label="博客描述"
-          rules={[
+        <ProFormText name="name" label="设备名称"></ProFormText>
+        <ProFormText name="web_server_redirect_uri" label="跳转地址"></ProFormText>
+        <ProFormSelect
+          mode="tags"
+          label="授权类型"
+          name="authorized_grant_types"
+          options={[
             {
-              type: 'string',
-              required: true,
-              message: '请输入博客描述',
+              label: '授权码模式',
+              value: 'authorization_code',
+            },
+            {
+              label: '密码模式',
+              value: 'password',
+            },
+            {
+              label: '客户端模式',
+              value: 'client_credentials',
+            },
+            {
+              label: '刷新token',
+              value: 'refresh_token',
             },
           ]}
-          name="description"
-        ></ProFormTextArea>
-        <ProFormText
-          label="博客名称"
-          rules={[
-            {
-              type: 'string',
-              required: true,
-              message: '请输入博客名称',
-            },
-          ]}
-          name="title"
-        />
-        <ConfirmCate
-          title={'添加类别'}
-          showOpen={showCategoryModal}
-          onClose={() => {
-            setShowCategoryModal(false);
-          }}
-          onFinish={async ({ name }) => {
-            await addCategory({
-              data: {
-                name: name,
-              },
-            });
-            setShowCategoryModal(false);
-            message.success('提交成功');
-          }}
-        ></ConfirmCate>
-
-        <ConfirmCate
-          title={'添加标签'}
-          showOpen={showTagModal}
-          onClose={() => {
-            setShowTagModal(false);
-          }}
-          onFinish={async ({ name }) => {
-            await addTags({
-              data: {
-                name: name,
-              },
-            });
-            setShowTagModal(false);
-            message.success('提交成功');
-          }}
-        ></ConfirmCate>
+        ></ProFormSelect>
+        <ProFormGroup title="令牌有效期">
+          <ProFormDigit name="access_token_validity" label="访问令牌" min={1}></ProFormDigit>
+          <ProFormDigit name="refresh_token_validity" label="刷新令牌" min={1}></ProFormDigit>
+        </ProFormGroup>
       </DrawerForm>
 
       <DeployDetail

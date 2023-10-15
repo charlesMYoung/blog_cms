@@ -12,9 +12,15 @@ export default [
   },
   {
     path: '/post-image',
-    name: '博客图片',
+    name: '图片',
     icon: 'FileImageOutlined',
     component: './post_img',
+  },
+  {
+    path: '/device',
+    name: '设备管理',
+    icon: 'FileImageOutlined',
+    component: './device',
   },
   {
     path: '/',

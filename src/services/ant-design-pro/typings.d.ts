@@ -31,6 +31,19 @@ declare namespace API {
     tags?: { tag: Tag }[];
   };
 
+  type Device = {
+    name?: string;
+    type?: string;
+    engine?: string;
+    os?: string;
+    client_id?: string;
+    scopes?: string;
+    authorized_grant_types: string;
+    web_server_redirect_uri: string;
+    access_token_validity?: number;
+    refresh_token_validity?: number;
+  };
+
   type Category = {
     id: string;
     name: string;
