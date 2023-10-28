@@ -32,16 +32,19 @@ declare namespace API {
   };
 
   type Device = {
-    name?: string;
-    type?: string;
-    engine?: string;
-    os?: string;
     client_id?: string;
+    client_name?: string;
+    is_locked?: boolean;
     scopes?: string;
     authorized_grant_types: string;
     web_server_redirect_uri: string;
     access_token_validity?: number;
     refresh_token_validity?: number;
+  };
+
+  type Scope = {
+    id?: string;
+    scope: string;
   };
 
   type Category = {

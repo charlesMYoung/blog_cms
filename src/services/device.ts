@@ -20,7 +20,7 @@ export async function getDevice(
   });
 }
 
-export async function getDeviceDetail(params: { id?: number }) {
+export async function getDeviceDetail(params: { id?: string }) {
   return request<API.Post[]>('/api/client', {
     method: 'GET',
     params: {
@@ -38,6 +38,22 @@ export async function addDevice(options?: Record<string, any>) {
   return request<Record<string, any>>('/api/client', {
     method: 'POST',
     ...(options || {}),
+  });
+}
+
+export async function addScope(options?: Record<string, any>) {
+  return request<Record<string, any>>('/api/client/scope', {
+    method: 'POST',
+    ...(options || {}),
+  });
+}
+
+export async function getScope(params?: { client_id?: string }) {
+  return request<{ data: API.Scope[] }>('/api/client/scope', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
   });
 }
 
@@ -59,7 +75,7 @@ export async function updateDevice(options?: Record<string, any>) {
  * @returns
  */
 export async function removeDevice(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/post', {
+  return request<Record<string, any>>('/api/client', {
     method: 'DELETE',
     ...(options || {}),
   });

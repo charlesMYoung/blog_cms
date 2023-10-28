@@ -1,4 +1,4 @@
-import { Button, message, Form, UploadFile, Tag, Image } from 'antd';
+import { Button, message, Form, Tag, Popconfirm } from 'antd';
 import React, { useState, useRef } from 'react';
 import {
   PageContainer,
@@ -9,13 +9,20 @@ import {
   ProFormText,
   ProFormDigit,
   ProFormGroup,
+  ProFormSwitch,
 } from '@ant-design/pro-components';
 import type { ProColumns, ActionType } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
 import { DeployDetail } from './detail';
-import isEmpty from 'lodash/isEmpty';
-import { addImage, removeImage } from '@/services/images';
-import { addDevice, getDevice, removeDevice, updateDevice } from '@/services/device';
+import {
+  addDevice,
+  getDevice,
+  removeDevice,
+  updateDevice,
+  addScope,
+  getScope,
+} from '@/services/device';
+import { ConfirmCate } from '@/components/ConfirmCategory';
 
 const handleAdd = async (fields: API.Device) => {
   const hide = message.loading('正在添加');
@@ -57,13 +64,13 @@ const handleUpdate = async (fields: API.Post) => {
  *
  * @param selectedRows
  */
-const handleRemove = async (selectedRows: API.Post[]) => {
+const handleRemove = async (selectedRows: API.Device[]) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
     await removeDevice({
       data: {
-        ids: selectedRows.map((row) => row.id),
+        ids: selectedRows.map((row) => row.client_id),
       },
     });
     hide();
@@ -76,85 +83,30 @@ const handleRemove = async (selectedRows: API.Post[]) => {
   }
 };
 
-const onEditUploadHandle = async (_files: File[]) => {
-  console.log(_files);
-  const file = _files[0];
-  const formData = new FormData();
-  if (file.name) formData.append('file', file);
-  const {
-    data: { url, name, id },
-  } = await addImage({
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    data: formData,
-  });
-  return [
-    {
-      url,
-      alt: `Nico_${id}`,
-      title: `Nico_${name}`,
-    },
-  ];
-};
-
 const PostList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
-  const [currentRow, setCurrentRow] = useState<API.Post>();
-  const [selectedRowsState, setSelectedRows] = useState<API.Post[]>([]);
+  const [currentRow, setCurrentRow] = useState<API.Device>();
+  const [selectedRowsState, setSelectedRows] = useState<API.Device[]>([]);
   const [editForm] = Form.useForm();
   const [createModalVisible, handleModalVisible] = useState<boolean>(false);
   const [form] = Form.useForm<{ name: string; company: string }>();
   const postImagesRef = useRef<API.Image[]>();
-  const [imageList, setImageList] = useState<UploadFile[]>([]);
+  const [showScopeDialog, setShowScopeDialog] = useState<boolean>(false);
+  const [commonOpts, setCommonOpts] = useState<API.Scope[]>([]);
 
-  const [postContent, setPostContent] = useState<string>('');
-
-  const onRemoveHandle = async (imageId: string) => {
-    // postImagesRef.current = [];
-    await removeImage({
-      data: {
-        ids: [imageId],
-      },
-    });
-    message.success('删除图片成功');
-    postImagesRef.current = postImagesRef.current?.filter((item) => item.id !== imageId);
-  };
-  const onUploadHandle = (
-    postCoverImage: API.Image,
-    newFiles: UploadFile[],
-    uploadStatus?: string,
-  ) => {
-    setImageList(newFiles);
-    if (uploadStatus !== 'done') {
-      return;
-    }
-    const hasExistPostImage = postImagesRef.current?.find((item) => item.id !== postCoverImage.id);
-    if (!hasExistPostImage) {
-      postImagesRef.current?.push(postCoverImage);
-    }
-    postImagesRef.current?.forEach((item) => {
-      if (item.id === postCoverImage.id) {
-        item.type = 'COVER';
-      } else {
-        item.type = 'POST';
-      }
-    });
-  };
-
-  const columns: ProColumns<API.Post>[] = [
+  const columns: ProColumns<API.Device>[] = [
     {
       title: 'id',
-      dataIndex: 'id',
+      dataIndex: 'client_id',
       hideInForm: true,
       hideInTable: true,
       hideInSearch: true,
+      copyable: true,
     },
-
     {
-      title: '博客标题',
-      dataIndex: 'title',
+      title: '设备名称',
+      dataIndex: 'client_name',
       hideInForm: true,
       render: (dom, entity) => {
         return (
@@ -172,65 +124,70 @@ const PostList: React.FC = () => {
       },
     },
     {
-      title: '博客分类',
-      dataIndex: 'category',
+      title: '是否锁定',
+      dataIndex: 'is_locked',
       hideInForm: true,
-      hideInTable: true,
       hideInSearch: true,
       valueType: 'text',
-      render(dom, entity) {
-        return entity.category?.name;
+      render(_, entity) {
+        return entity.is_locked ? '是' : '否';
       },
     },
     {
-      title: '博客标签',
-      dataIndex: 'tags',
+      title: '授权类型',
+      dataIndex: 'authorized_grant_types',
       hideInForm: true,
+      ellipsis: true,
       hideInTable: true,
       hideInSearch: true,
       valueType: 'text',
-      render(dom, entity) {
-        return entity.tags?.map((item) => {
+      render(_, entity) {
+        return entity.authorized_grant_types.split(',')?.map((item) => {
           return (
-            <Tag color="blue" key={item.tag.id}>
-              {item.tag.name}
+            <Tag color="blue" key={item}>
+              {item}
             </Tag>
           );
         });
       },
     },
     {
-      title: '海报',
-      dataIndex: 'images',
-      hideInForm: true,
+      title: 'access token有效期',
+      dataIndex: 'access_token_validity',
+      // hideInForm: true,
+      ellipsis: true,
       hideInTable: true,
       hideInSearch: true,
-      valueType: 'image',
-      render(dom, entity) {
-        const imageUrl = entity.images.find((item) => item.type === 'COVER')?.url;
-        return imageUrl ? <Image src={imageUrl} width="400px"></Image> : '暂无图片';
-      },
+      valueType: 'text',
     },
     {
-      title: '描述',
-      dataIndex: 'description',
+      title: 'refresh token有效期',
+      dataIndex: 'refresh_token_validity',
+      // hideInForm: true,
+      ellipsis: true,
+      hideInTable: true,
+      hideInSearch: true,
+      valueType: 'text',
+    },
+    {
+      title: '地址跳转',
+      dataIndex: 'web_server_redirect_uri',
       hideInForm: true,
       ellipsis: true,
       hideInTable: true,
       hideInSearch: true,
-      valueType: 'textarea',
+      valueType: 'text',
+      copyable: true,
     },
     {
-      title: '是否发布',
-      dataIndex: 'is_release',
+      title: '授权密钥',
+      dataIndex: 'client_secret',
       hideInForm: true,
       ellipsis: true,
-      onFilter: true,
-      filters: true,
+      hideInTable: true,
+      copyable: true,
       hideInSearch: true,
-      render(_, entity) {
-        return <>{entity.is_release ? '是' : '否'}</>;
-      },
+      valueType: 'text',
     },
     {
       title: '创建时间',
@@ -255,49 +212,31 @@ const PostList: React.FC = () => {
           key="edit"
           type="link"
           onClick={async () => {
-            postImagesRef.current = [];
-            const coverImage =
-              record.images?.find((item) => item.type === 'COVER') || ({} as API.Image);
-            // 不为空的时候才push
-            if (!isEmpty(coverImage)) {
-              postImagesRef.current?.push(coverImage);
-            }
-            if (postImagesRef.current.length === 1) {
-              setImageList([
-                {
-                  uid: coverImage.id,
-                  name: coverImage.name,
-                  status: 'done',
-                  url: coverImage.url,
-                },
-              ]);
-            } else {
-              setImageList([]);
-            }
-
+            const { data } = await getScope({ client_id: record.client_id });
             editForm.setFieldsValue({
               ...record,
-              category_id: record?.category?.id || '',
-              tag_ids: record?.tags?.map((item) => item.tag.id) || [],
+              scope_ids: data,
+              authorized_grant_types: record.authorized_grant_types.split(','),
             });
-
-            setPostContent(record.content);
             handleModalVisible(true);
           }}
         >
           编辑
         </Button>,
-        <Button
-          danger
-          type="link"
-          key="delete"
-          onClick={async () => {
+        <Popconfirm
+          key={`popconfirm-${record.client_id}`}
+          title={`删除${record.client_name}?`}
+          onConfirm={async () => {
             await handleRemove([record]);
             actionRef.current?.reloadAndRest?.();
           }}
+          okText="Yes"
+          cancelText="No"
         >
-          删除
-        </Button>,
+          <Button danger type="link" key="delete">
+            删除
+          </Button>
+        </Popconfirm>,
       ],
     },
   ];
@@ -317,10 +256,13 @@ const PostList: React.FC = () => {
             onClick={() => {
               editForm.resetFields();
               form.resetFields();
-              setPostContent('');
               postImagesRef.current = [];
+              editForm.setFieldsValue({
+                is_locked: false,
+                access_token_validity: 1800,
+                refresh_token_validity: 604800,
+              });
               handleModalVisible(true);
-              setImageList([]);
             }}
           >
             <PlusOutlined /> 新增设备
@@ -363,13 +305,16 @@ const PostList: React.FC = () => {
         onFinish={async (value) => {
           const formData = await editForm.validateFields();
           let success;
-          console.log('value----', value);
-          if (formData && formData.id) {
+          if (formData && formData.client_id) {
             success = await handleUpdate({
               ...formData,
+              authorized_grant_types: formData.authorized_grant_types.join(','),
             } as API.Post);
           } else {
-            success = await handleAdd(value as API.Device);
+            success = await handleAdd({
+              ...value,
+              authorized_grant_types: value.authorized_grant_types.join(','),
+            } as API.Device);
           }
           if (success) {
             handleModalVisible(false);
@@ -379,8 +324,8 @@ const PostList: React.FC = () => {
           }
         }}
       >
-        <ProFormText name="id" hidden />
-        <ProFormText name="name" label="设备名称"></ProFormText>
+        <ProFormText name="client_id" hidden />
+        <ProFormText name="client_name" label="设备名称"></ProFormText>
         <ProFormText name="web_server_redirect_uri" label="跳转地址"></ProFormText>
         <ProFormSelect
           mode="tags"
@@ -405,6 +350,60 @@ const PostList: React.FC = () => {
             },
           ]}
         ></ProFormSelect>
+        <ConfirmCate
+          title={'添加授权范围'}
+          showOpen={showScopeDialog}
+          onClose={() => {
+            setShowScopeDialog(false);
+          }}
+          onFinish={async ({ name }) => {
+            await addScope({
+              data: {
+                name: name,
+              },
+            });
+            setShowScopeDialog(false);
+            message.success('提交成功');
+          }}
+        ></ConfirmCate>
+        <ProFormSelect
+          mode="tags"
+          label={
+            <>
+              {'授权范围'}
+              &nbsp;
+              <Button
+                type="dashed"
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setShowScopeDialog(true);
+                }}
+              ></Button>
+            </>
+          }
+          name="scope_ids"
+          fieldProps={{
+            searchOnFocus: true,
+            async onDropdownVisibleChange(open) {
+              if (open) {
+                const { data } = await getScope();
+                setCommonOpts(data);
+              }
+            },
+          }}
+          options={
+            Array.isArray(commonOpts)
+              ? commonOpts.map((item) => {
+                  return {
+                    label: item.scope,
+                    value: item.id,
+                  };
+                })
+              : []
+          }
+        ></ProFormSelect>
+        <ProFormSwitch name="is_locked" label="是否锁定？"></ProFormSwitch>
         <ProFormGroup title="令牌有效期">
           <ProFormDigit name="access_token_validity" label="访问令牌" min={1}></ProFormDigit>
           <ProFormDigit name="refresh_token_validity" label="刷新令牌" min={1}></ProFormDigit>
