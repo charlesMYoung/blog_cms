@@ -23,6 +23,12 @@ export default [
     component: './device',
   },
   {
+    path: '/userList',
+    name: '用户管理',
+    icon: 'FileImageOutlined',
+    component: './userList',
+  },
+  {
     path: '/',
     redirect: '/post',
   },

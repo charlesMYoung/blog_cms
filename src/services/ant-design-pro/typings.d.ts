@@ -31,6 +31,15 @@ declare namespace API {
     tags?: { tag: Tag }[];
   };
 
+  type User = {
+    id: string;
+    username?: string;
+    password?: string;
+    email?: string;
+    is_locked?: boolean;
+    enable?: boolean;
+  };
+
   type Device = {
     client_id?: string;
     client_name?: string;

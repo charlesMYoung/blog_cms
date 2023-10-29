@@ -7,7 +7,7 @@ export async function getDevice(
   sort?: Record<string, any>,
   filter?: Record<string, any>,
 ) {
-  return request<API.Post[]>('/api/client', {
+  return request<API.Device[]>('/api/client', {
     method: 'GET',
     params: {
       ...{
@@ -21,7 +21,7 @@ export async function getDevice(
 }
 
 export async function getDeviceDetail(params: { id?: string }) {
-  return request<API.Post[]>('/api/client', {
+  return request<API.Device[]>('/api/client', {
     method: 'GET',
     params: {
       ...params,
