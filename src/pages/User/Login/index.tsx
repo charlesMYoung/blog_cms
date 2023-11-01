@@ -1,7 +1,7 @@
 import Footer from '@/components/Footer';
-import { login } from '@/services/ant-design-pro/api';
+import { oAuthToken } from '@/services/user';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { LoginForm, ProFormText } from '@ant-design/pro-components';
+import { LoginForm, ProFormCheckbox, ProFormText } from '@ant-design/pro-components';
 import { useEmotionCss } from '@ant-design/use-emotion-css';
 import { history, SelectLang, useModel, Helmet } from '@umijs/max';
 import { Alert, message } from 'antd';
@@ -48,7 +48,9 @@ const LoginMessage: React.FC<{
 };
 
 const Login: React.FC = () => {
-  const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
+  const [userLoginState, setUserLoginState] = useState<API.LoginResult>(
+    {} as unknown as API.LoginResult,
+  );
   const { initialState, setInitialState } = useModel('@@initialState');
 
   const containerClassName = useEmotionCss(() => {
@@ -78,11 +80,24 @@ const Login: React.FC = () => {
   const handleSubmit = async (values: API.LoginParams) => {
     try {
       // 登录
-      const msg = await login({ ...values });
-      console.log('msg', msg);
+      const params = new URLSearchParams();
+      params.set('username', values.username);
+      params.set('password', values.password);
+      params.set('grant_type', 'password');
+      params.set('scope', 'admin:blog');
+      const msg = await oAuthToken(params, {
+        skipErrorHandler: true,
+      });
       if (msg.code === '0000') {
         message.success('登录成功！');
-        session.put('app_access_token', msg.data?.access_token);
+        session.put('token', msg.data);
+        if (values.auto_login) {
+          session.put('refresh_token', msg.data?.refresh_token, true);
+          session.put('auto_login', true, true);
+        } else {
+          session.remove('auto_login');
+          session.remove('refresh_token');
+        }
         await fetchUserInfo();
 
         /** 此方法会跳转到 redirect 参数所在的位置 */
@@ -91,13 +106,12 @@ const Login: React.FC = () => {
         return;
       }
       // 如果失败去设置用户错误信息
-      setUserLoginState(msg);
-    } catch (error) {
-      message.error('登录失败，请重试！');
+    } catch (error: any) {
+      setUserLoginState(error?.response.data as API.LoginResult);
     }
   };
   const { code } = userLoginState;
-
+  console.log(userLoginState);
   return (
     <div className={containerClassName}>
       <Helmet>
@@ -116,8 +130,8 @@ const Login: React.FC = () => {
             maxWidth: '75vw',
           }}
           logo={<img alt="logo" src="/logo.svg" />}
-          title="@Platform"
-          subTitle={`更为简便的管理你的服务`}
+          title="Cyatime"
+          subTitle={`简单管理`}
           initialValues={{
             autoLogin: true,
           }}
@@ -125,7 +139,7 @@ const Login: React.FC = () => {
             await handleSubmit(values as API.LoginParams);
           }}
         >
-          {code === 'U10000' && <LoginMessage content={'账户或密码错误'} />}
+          {code && code === 'C40005' && <LoginMessage content={'账户或密码错误'} />}
           <ProFormText
             name="username"
             fieldProps={{
@@ -159,6 +173,9 @@ const Login: React.FC = () => {
               marginBottom: 24,
             }}
           >
+            <ProFormCheckbox noStyle name="auto_login">
+              自动登录
+            </ProFormCheckbox>
             <a
               style={{
                 float: 'right',

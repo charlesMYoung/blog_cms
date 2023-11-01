@@ -26,7 +26,7 @@ export default [
     path: '/userList',
     name: '用户管理',
     icon: 'FileImageOutlined',
-    component: './userList',
+    component: './User/userList',
   },
   {
     path: '/',

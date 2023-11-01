@@ -7,10 +7,11 @@ import type { RunTimeLayoutConfig } from '@umijs/max';
 import { history, Link } from '@umijs/max';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import { currentUser as queryCurrentUser } from './services/ant-design-pro/api';
+import { oAuthToken, currentUser as queryCurrentUser } from './services/user';
 import React from 'react';
 import 'bytemd/dist/index.css';
 import { AvatarDropdown, AvatarName } from './components/RightContent/AvatarDropdown';
+import { session } from './utils';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 
@@ -23,16 +24,39 @@ export async function getInitialState(): Promise<{
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
 }> {
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = async (action?: string): Promise<API.CurrentUser | undefined> => {
     try {
       const msg = await queryCurrentUser({
         skipErrorHandler: true,
       });
       return msg.data;
     } catch (error) {
-      history.push(loginPath);
+      if (action) {
+        history.push(loginPath);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        return handleRefreshToken();
+      }
     }
-    return undefined;
+  };
+
+  const handleRefreshToken = async (): Promise<API.CurrentUser | undefined> => {
+    const refreshToken = session.get<string>('refresh_token');
+    const params = new URLSearchParams();
+    params.set('refresh_token', refreshToken);
+    params.set('grant_type', 'refresh_token');
+    try {
+      const msg = await oAuthToken(params, { skipErrorHandler: true });
+      const token = msg.data;
+      if (token) {
+        session.put('token', token);
+        session.put('refresh_token', token.refresh_token, true);
+      }
+      return await fetchUserInfo('refresh_token');
+    } catch (error) {
+      history.push(loginPath);
+      return undefined;
+    }
   };
   // 如果不是登录页面，执行
   const { location } = history;

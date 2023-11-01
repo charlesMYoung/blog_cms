@@ -64,3 +64,33 @@ export async function removeUser(options?: Record<string, any>) {
     ...(options || {}),
   });
 }
+
+/** 获取当前的用户 GET /api/currentUser */
+export async function currentUser(options?: { [key: string]: any }) {
+  return request<{
+    data: API.CurrentUser;
+  }>('/api/user/current', {
+    method: 'GET',
+    ...(options || {}),
+  });
+}
+
+/** 退出登录接口 POST /api/login/outLogin */
+export async function outLogin(options?: { [key: string]: any }) {
+  return request<Record<string, any>>('/api/login/outLogin', {
+    method: 'POST',
+    ...(options || {}),
+  });
+}
+
+export async function oAuthToken(data: any, options?: { [key: string]: any }) {
+  return request<API.LoginResult>('/api/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    data,
+    // data: body,
+    ...(options || {}),
+  });
+}

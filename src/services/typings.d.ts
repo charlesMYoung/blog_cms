@@ -70,13 +70,17 @@ declare namespace API {
     username: string;
   };
 
-  type LoginResult = {
-    code?: string;
-    message?: string;
-    data?: {
-      access_token?: string;
-    };
+  type ErrorMessage = {
+    code: string;
+    message: string;
+    stack: string;
   };
+
+  type LoginResult = {
+    code: string;
+    message: string;
+    data: Token;
+  } & ErrorMessage;
 
   type PageParams = {
     current?: number;
@@ -98,23 +102,18 @@ declare namespace API {
     progress?: number;
   };
 
-  type RuleList = {
-    data?: RuleListItem[];
-    /** 列表的内容总数 */
-    total?: number;
-    success?: boolean;
-  };
-
-  type FakeCaptcha = {
-    code?: number;
-    status?: string;
-  };
-
   type LoginParams = {
-    username?: string;
-    password?: string;
-    autoLogin?: boolean;
-    type?: string;
+    username: string;
+    password: string;
+    grant_type: string;
+    auto_login?: boolean;
+  };
+
+  type Token = {
+    access_token: string;
+    token_type: string;
+    refresh_token: string;
+    expires_in: number;
   };
 
   type ErrorResponse = {

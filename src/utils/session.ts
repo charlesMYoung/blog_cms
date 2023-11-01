@@ -21,13 +21,13 @@ class SessionManager {
     defer(() => this.saveStorage());
   }
 
-  get(key: string) {
+  get<T>(key: string): T {
     const cacheValue = tobeSessionSavedJson[key] || tobeLocalSavedJson[key];
     if (!cacheValue) {
       const value = SESSION_STORAGE.getItem(key) || LOCAL_STORAGE.getItem(key);
       return value ? JSON.parse(aes.decrypt(value, key).toString(encUTF8)) : null;
     }
-    return cacheValue;
+    return cacheValue as T;
   }
 
   remove(key: string) {

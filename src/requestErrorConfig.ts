@@ -1,7 +1,9 @@
-﻿import type { RequestOptions } from '@@/plugin-request/request';
+﻿import type { AxiosError, RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
 import { message, notification } from 'antd';
 import { session } from './utils';
+import { history, request } from '@umijs/max';
+import { oAuthToken } from './services/user';
 
 // 错误处理方案： 错误类型
 enum ErrorShowType {
@@ -19,6 +21,52 @@ interface ResponseStructure {
   errorMessage?: string;
   showType?: ErrorShowType;
 }
+
+let isPending: boolean = false;
+let preRequests: { url: string | undefined; method: string | undefined; params: any; data: any }[] =
+  [];
+const preRequestAPI = async (error: AxiosError) => {
+  if (isPending) {
+    preRequests.push({
+      url: error.config.url,
+      method: error.config.method,
+      params: error.config.params,
+      data: error.config.data,
+    });
+    return;
+  }
+
+  const token = session.get<API.Token>('token');
+  if (!token.refresh_token) {
+    if (!history) return;
+    history.push('/user/login');
+  }
+  const params = new URLSearchParams();
+  params.set('refresh_token', token.refresh_token);
+  params.set('grant_type', 'refresh_token');
+  try {
+    isPending = true;
+    const { data: token } = await oAuthToken(params, {
+      skipErrorHandler: true,
+    });
+    if (token) {
+      session.put('token', token);
+      session.put('refresh_token', token.refresh_token, true);
+    }
+    const readyQuest = preRequests.map((item) => {
+      return request(item.url || '', {
+        method: item.method,
+        params: item.params,
+        data: item.data,
+      });
+    });
+    isPending = false;
+    return Promise.all(readyQuest);
+  } catch (error) {
+    if (!history) return;
+    history.push('/user/login');
+  }
+};
 
 /**
  * @name 错误处理
@@ -79,6 +127,11 @@ export const errorConfig: RequestConfig = {
           message: `错误码:${error.response.data.code}`,
           description: `${error.response.data.message}`,
         });
+      } else if (error.response.code === 'C40008') {
+        preRequestAPI(error);
+
+        // if (!history) return;
+        // history.push('/user/login');
       } else if (error.request) {
         // 请求已经成功发起，但没有收到响应
         // \`error.request\` 在浏览器中是 XMLHttpRequest 的实例，
@@ -94,13 +147,24 @@ export const errorConfig: RequestConfig = {
   // 请求拦截器
   requestInterceptors: [
     (config: RequestOptions) => {
-      const appAccessToken = session.get('app_access_token');
+      const token = session.get<API.Token>('token');
+      let Authorization = '';
+      if (config.method === 'post' && config.url === '/api/oauth2/token') {
+        const clientId = 'cloa93h9e0000b897rjw7mw2g';
+        const clientSecure =
+          'ClientSecure_e3bbc8106f1be30faffc3d263e81206381ef916d5b1fe9c59aac24943fd64a5b';
+        const basicToken = btoa(`${clientId}:${clientSecure}`);
+        Authorization = `Basic ${basicToken}`;
+      } else if (token.access_token) {
+        Authorization = `Bearer ${token.access_token}`;
+      }
+      console.log('Authorization', Authorization);
       // const url = config?.url?.concat('?token = 123');
       return {
         ...config,
         headers: {
           ...config.headers,
-          Authorization: `Bearer ${appAccessToken}`,
+          Authorization,
         },
       };
     },

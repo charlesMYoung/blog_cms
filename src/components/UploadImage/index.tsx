@@ -38,7 +38,6 @@ export const UploadImage = ({ onUpload, onRemove, imageList }: UploadImageProps)
   };
 
   const onRemoveHandle = (file: UploadFile) => {
-    console.log('file', file);
     if (file?.response?.data?.id) {
       onRemove(file.response.data.id);
     } else {
@@ -46,12 +45,20 @@ export const UploadImage = ({ onUpload, onRemove, imageList }: UploadImageProps)
     }
   };
 
+  const accessToken = () => {
+    const { access_token } = session.get<API.Token>('token');
+    if (!access_token) {
+      return '';
+    }
+    return `Bearer ${access_token}`;
+  };
+
   return (
     <ImgCrop rotationSlider aspect={1.7} showGrid showReset>
       <Upload
         action={uploadUrl}
         headers={{
-          Authorization: `Bearer ${session.get('app_access_token')}`,
+          Authorization: accessToken(),
         }}
         listType="picture-card"
         fileList={imageList}
