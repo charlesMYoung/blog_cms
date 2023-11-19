@@ -118,6 +118,8 @@ export const errorConfig: RequestConfig = {
               message.error(errorMessage);
           }
         }
+      } else if (error.response.data.code === 'C40008') {
+        preRequestAPI(error);
       } else if (error.response) {
         // Axios 的错误
         // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
@@ -127,11 +129,6 @@ export const errorConfig: RequestConfig = {
           message: `错误码:${error.response.data.code}`,
           description: `${error.response.data.message}`,
         });
-      } else if (error.response.code === 'C40008') {
-        preRequestAPI(error);
-
-        // if (!history) return;
-        // history.push('/user/login');
       } else if (error.request) {
         // 请求已经成功发起，但没有收到响应
         // \`error.request\` 在浏览器中是 XMLHttpRequest 的实例，

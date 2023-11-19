@@ -7,7 +7,7 @@ export async function userList(
   sort?: Record<string, any>,
   filter?: Record<string, any>,
 ) {
-  return request<API.User[]>('/api/user', {
+  return request<{ data: API.User[] }>('/api/user', {
     method: 'GET',
     params: {
       ...{
@@ -20,8 +20,8 @@ export async function userList(
   });
 }
 
-export async function getUserDetail(params: { id?: string }) {
-  return request<API.User[]>('/api/user', {
+export async function getUserDetail(params: { id?: string; email?: string; username?: string }) {
+  return request<{ data: API.User }>('/api/user', {
     method: 'GET',
     params: {
       ...params,

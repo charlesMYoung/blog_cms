@@ -11,7 +11,8 @@ import {
 import type { ProColumns, ActionType } from '@ant-design/pro-components';
 import { PlusOutlined } from '@ant-design/icons';
 import { DeployDetail } from './detail';
-import { addUser, removeUser, updateUser, userList } from '@/services/user';
+import { addUser, getUserDetail, removeUser, updateUser, userList } from '@/services/user';
+import isEmpty from 'lodash/isEmpty';
 
 const handleAdd = async (fields: API.User) => {
   const hide = message.loading('正在添加');
@@ -263,8 +264,56 @@ const UserList: React.FC = () => {
         }}
       >
         <ProFormText name="id" hidden />
-        <ProFormText name="username" label="用户名"></ProFormText>
+        <ProFormText
+          name="username"
+          label="用户名"
+          rules={[
+            {
+              required: true,
+              message: '请输入用户名',
+            },
+            {
+              async validator(rule, value) {
+                if (value === '') {
+                  return Promise.reject('请输入邮箱');
+                }
+                const { data } = await getUserDetail({
+                  username: value,
+                });
+                if (!isEmpty(data)) {
+                  return Promise.reject('用户名已存在');
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
+        ></ProFormText>
         <ProFormText name="password" label="密码"></ProFormText>
+        <ProFormText
+          rules={[
+            {
+              required: true,
+              type: 'email',
+              message: '请输入邮箱',
+            },
+            {
+              async validator(rule, value) {
+                if (value === '') {
+                  return Promise.reject('请输入邮箱');
+                }
+                const { data } = await getUserDetail({
+                  email: value,
+                });
+                if (!isEmpty(data)) {
+                  return Promise.reject('邮箱已存在');
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
+          name="email"
+          label="邮箱"
+        ></ProFormText>
         <ProFormSwitch name="enable" label="是否可用"></ProFormSwitch>
         <ProFormSwitch name="is_locked" label="是否锁定？"></ProFormSwitch>
       </DrawerForm>
