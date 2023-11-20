@@ -10,7 +10,6 @@ WORKDIR /app
 
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 RUN yarn
-RUN yarn add http-server -g
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -35,6 +34,7 @@ RUN chown -R lady:dmc /app/logs
 
 # 拷贝文件
 COPY --from=builder --chown=lady:dmc /app/dist/* ./
+RUN yarn add http-server -g
 
 USER lady
 
