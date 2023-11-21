@@ -20,5 +20,5 @@ declare module 'bizcharts-plugin-slider';
 declare const REACT_APP_ENV: 'test' | 'dev' | 'pre' | false;
 
 declare const CLIENT_ID: string;
-declare const CLIENT_SECRECT: string;
+declare const CLIENT_SECRET: string;
 declare const SERVICE_URL: string;

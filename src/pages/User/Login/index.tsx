@@ -99,7 +99,6 @@ const Login: React.FC = () => {
           session.remove('refresh_token');
         }
         await fetchUserInfo();
-
         /** 此方法会跳转到 redirect 参数所在的位置 */
         if (!history) return;
         history.push('/');
@@ -111,7 +110,6 @@ const Login: React.FC = () => {
     }
   };
   const { code } = userLoginState;
-  console.log(userLoginState);
   return (
     <div className={containerClassName}>
       <Helmet>
@@ -140,6 +138,7 @@ const Login: React.FC = () => {
           }}
         >
           {code && code === 'C40005' && <LoginMessage content={'账户或密码错误'} />}
+          {code && code === 'C40004' && <LoginMessage content={'客户端异常'} />}
           <ProFormText
             name="username"
             fieldProps={{
