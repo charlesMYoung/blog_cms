@@ -40,6 +40,6 @@ RUN ls -al -R
 
 USER lady
 
-EXPOSE 3100
+EXPOSE 3000
 
 CMD ["/bin/sh", "-c", "pm2-runtime start ecosystem.config.js > /app/logs/start_lady.log 2>&1"]
