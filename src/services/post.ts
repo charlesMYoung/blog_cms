@@ -7,7 +7,7 @@ export async function getPostInfo(
   sort?: Record<string, any>,
   filter?: Record<string, any>,
 ) {
-  return request<API.Post[]>('/api/post', {
+  return request<API.Post[]>('/post', {
     method: 'GET',
     params: {
       ...{
@@ -21,7 +21,7 @@ export async function getPostInfo(
 }
 
 export async function getPostDetail(params: { id?: number }) {
-  return request<API.Post[]>('/api/post', {
+  return request<API.Post[]>('/post', {
     method: 'GET',
     params: {
       ...params,
@@ -35,7 +35,7 @@ export async function getPostDetail(params: { id?: number }) {
  * @returns
  */
 export async function addPost(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/post', {
+  return request<Record<string, any>>('/post', {
     method: 'POST',
     ...(options || {}),
   });
@@ -47,7 +47,7 @@ export async function addPost(options?: Record<string, any>) {
  * @returns
  */
 export async function updatePost(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/post', {
+  return request<Record<string, any>>('/post', {
     method: 'PUT',
     ...(options || {}),
   });
@@ -59,35 +59,35 @@ export async function updatePost(options?: Record<string, any>) {
  * @returns
  */
 export async function removePost(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/post', {
+  return request<Record<string, any>>('/post', {
     method: 'DELETE',
     ...(options || {}),
   });
 }
 
 export async function getTags() {
-  return request<{ data: API.Tag[] }>('/api/tag', {
+  return request<{ data: API.Tag[] }>('/tag', {
     method: 'GET',
     params: {},
   });
 }
 
 export async function addTags(options?: Record<string, any>) {
-  return request<{ id: string }>('/api/tag', {
+  return request<{ id: string }>('/tag', {
     method: 'Post',
     ...(options || {}),
   });
 }
 
 export async function addCategory(options?: Record<string, any>) {
-  return request<{ id: string }>('/api/category', {
+  return request<{ id: string }>('/category', {
     method: 'Post',
     ...(options || {}),
   });
 }
 
 export async function getCategory() {
-  return request<{ data: API.Category[] }>('/api/category', {
+  return request<{ data: API.Category[] }>('/category', {
     method: 'GET',
     params: {},
   });

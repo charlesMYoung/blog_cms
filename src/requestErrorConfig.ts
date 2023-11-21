@@ -146,17 +146,17 @@ export const errorConfig: RequestConfig = {
     (config: RequestOptions) => {
       const token = session.get<API.Token>('token');
       let Authorization = '';
-      if (config.method === 'post' && config.url === '/api/oauth2/token') {
-        const clientId = 'cloa93h9e0000b897rjw7mw2g';
-        const clientSecure =
-          'ClientSecure_e3bbc8106f1be30faffc3d263e81206381ef916d5b1fe9c59aac24943fd64a5b';
+      if (config.method === 'post' && config.url === '/oauth2/token') {
+        const clientId = CLIENT_ID;
+        const clientSecure = CLIENT_SECRECT;
         const basicToken = btoa(`${clientId}:${clientSecure}`);
         Authorization = `Basic ${basicToken}`;
       } else if (token.access_token) {
         Authorization = `Bearer ${token.access_token}`;
       }
-      console.log('Authorization', Authorization);
-      // const url = config?.url?.concat('?token = 123');
+      if(SERVICE_URL){
+        config.baseURL = SERVICE_URL;
+      }
       return {
         ...config,
         headers: {

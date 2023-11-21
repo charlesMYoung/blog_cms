@@ -9,7 +9,7 @@ export async function getImageInfo(
   },
   options?: Record<string, any>,
 ) {
-  return request<API.Image[]>('/api/image', {
+  return request<API.Image[]>('/image', {
     method: 'GET',
     params: {
       ...params,
@@ -19,7 +19,7 @@ export async function getImageInfo(
 }
 
 export async function getImageDetail(params: { id?: number }) {
-  return request<API.Image>('/api/image', {
+  return request<API.Image>('/image', {
     method: 'GET',
     params: {
       ...params,
@@ -28,14 +28,14 @@ export async function getImageDetail(params: { id?: number }) {
 }
 
 export async function removeImage(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/image', {
+  return request<Record<string, any>>('/image', {
     method: 'DELETE',
     ...(options || {}),
   });
 }
 
 export async function addImage(options?: Record<string, any>) {
-  return request<Record<string, API.Image>>('/api/image/upload', {
+  return request<Record<string, API.Image>>('/image/upload', {
     method: 'POST',
     ...(options || {}),
   });

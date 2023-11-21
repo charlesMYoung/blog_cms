@@ -7,7 +7,7 @@ export async function getDevice(
   sort?: Record<string, any>,
   filter?: Record<string, any>,
 ) {
-  return request<API.Device[]>('/api/client', {
+  return request<API.Device[]>('/client', {
     method: 'GET',
     params: {
       ...{
@@ -21,7 +21,7 @@ export async function getDevice(
 }
 
 export async function getDeviceDetail(params: { id?: string }) {
-  return request<API.Device[]>('/api/client', {
+  return request<API.Device[]>('/client', {
     method: 'GET',
     params: {
       ...params,
@@ -35,21 +35,21 @@ export async function getDeviceDetail(params: { id?: string }) {
  * @returns
  */
 export async function addDevice(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/client', {
+  return request<Record<string, any>>('/client', {
     method: 'POST',
     ...(options || {}),
   });
 }
 
 export async function addScope(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/client/scope', {
+  return request<Record<string, any>>('/client/scope', {
     method: 'POST',
     ...(options || {}),
   });
 }
 
 export async function getScope(params?: { client_id?: string }) {
-  return request<{ data: API.Scope[] }>('/api/client/scope', {
+  return request<{ data: API.Scope[] }>('/client/scope', {
     method: 'GET',
     params: {
       ...params,
@@ -63,7 +63,7 @@ export async function getScope(params?: { client_id?: string }) {
  * @returns
  */
 export async function updateDevice(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/client', {
+  return request<Record<string, any>>('/client', {
     method: 'PUT',
     ...(options || {}),
   });
@@ -75,7 +75,7 @@ export async function updateDevice(options?: Record<string, any>) {
  * @returns
  */
 export async function removeDevice(options?: Record<string, any>) {
-  return request<Record<string, any>>('/api/client', {
+  return request<Record<string, any>>('/client', {
     method: 'DELETE',
     ...(options || {}),
   });
