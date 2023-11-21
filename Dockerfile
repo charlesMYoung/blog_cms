@@ -36,9 +36,10 @@ RUN npm install pm2 -g
 COPY --from=builder --chown=lady:dmc /app/dist/* ./
 COPY --from=builder --chown=lady:dmc /app/ecosystem.config.js ./
 
+RUN ls -al -R
 
 USER lady
 
 EXPOSE 3000
 
-CMD ["/bin/sh", "-c", "pm2-runtime process.yml> /app/logs/start_lady.log 2>&1"]
+CMD ["/bin/sh", "-c", "pm2-runtime start ecosystem.config.js > /app/logs/start_lady.log 2>&1"]
