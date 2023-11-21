@@ -31,13 +31,14 @@ RUN adduser -S lady -u 1001
 
 RUN mkdir -p /app/logs
 RUN chown -R lady:dmc /app/logs
-
+RUN npm install pm2 -g
 # 拷贝文件
 COPY --from=builder --chown=lady:dmc /app/dist/* ./
-RUN yarn add http-server -g
+COPY --from=builder --chown=lady:dmc /app/ecosystem.config.js ./
+
 
 USER lady
 
 EXPOSE 3000
 
-CMD ["/bin/sh", "-c", "yarn http-server -p 3000 > /app/logs/start_lady.log 2>&1"]
+CMD ["/bin/sh", "-c", "pm2-runtime process.yml> /app/logs/start_lady.log 2>&1"]
