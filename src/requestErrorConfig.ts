@@ -147,15 +147,15 @@ export const errorConfig: RequestConfig = {
       const token = session.get<API.Token>('token');
       let Authorization = '';
       if (config.method === 'post' && config.url === 'oauth2/token') {
-        const clientId = CLIENT_ID;
-        const clientSecure = CLIENT_SECRET;
+        const clientId = process.env.CLIENT_ID || CLIENT_ID;
+        const clientSecure = process.env.CLIENT_SECRET || CLIENT_SECRET;
         const basicToken = btoa(`${clientId}:${clientSecure}`);
         Authorization = `Basic ${basicToken}`;
       } else if (token.access_token) {
         Authorization = `Bearer ${token.access_token}`;
       }
-      if (SERVICE_URL) {
-        config.baseURL = SERVICE_URL;
+      if (process.env.SERVICE_URL || SERVICE_URL) {
+        config.baseURL = process.env.SERVICE_URL || SERVICE_URL;
       }
       return {
         ...config,
