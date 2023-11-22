@@ -25,6 +25,8 @@ FROM base AS runner
 WORKDIR /app
 
 RUN mkdir -p /app/logs
+RUN mkdir -p /app/pm2
+RUN chmod 777 -R /app/pm2
 RUN npm install pm2 -g
 # 拷贝文件
 COPY --from=builder  /app/dist/* ./
