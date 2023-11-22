@@ -3,8 +3,8 @@ import { defineConfig } from '@umijs/max';
 
 export default defineConfig({
   define: {
-    CLIENT_ID: 'cloa93h9e0000b897rjw7mw2g',
-    CLIENT_SECRET: 'ClientSecure_e3bbc8106f1be30faffc3d263e81206381ef916d5b1fe9c59aac24943fd64a5b',
+    CLIENT_ID: 'clp9wib2z0001b88fpyyq63vx',
+    CLIENT_SECRET: 'ClientSecure_32cda7d86ed668b3e334330c45785d4ef0fa162e9e5e2fd6bce827d198c0fedc',
     SERVICE_URL: 'https://api.cyatime.com',
   },
 });
