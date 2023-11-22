@@ -4,7 +4,7 @@ import ImgCrop from 'antd-img-crop';
 import { RcFile } from 'antd/es/upload';
 import React from 'react';
 
-const uploadUrl = '/api/image/upload';
+const uploadUrl = SERVICE_URL + '/image/upload';
 
 export interface UploadImageProps {
   onUpload: (imageData: API.Image, files: UploadFile[], status?: string) => void;
