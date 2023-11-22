@@ -24,23 +24,16 @@ FROM base AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV production
-
-RUN addgroup -g 1001 -S dmc
-RUN adduser -S lady -u 1001
-
 RUN mkdir -p /app/logs
-RUN chown -R lady:dmc /app/logs
+RUN chown -R /app/logs
 RUN npm install pm2 -g
 # 拷贝文件
-COPY --from=builder --chown=lady:dmc /app/dist/* ./
-COPY --from=builder --chown=lady:dmc /app/ecosystem.config.js ./
+COPY --from=builder  /app/dist/* ./
+COPY --from=builder  /app/ecosystem.config.js ./
 # https://github.com/Tzahi12345/YoutubeDL-Material/commit/45be270b6f3d85c75b52f30ea6c7f0cee068c4f8
 ENV PM2_HOME=/app/pm2
 
 RUN ls -al -R
-
-USER lady
 
 EXPOSE 3000
 
